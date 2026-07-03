@@ -1,0 +1,421 @@
+{
+ "version": "0.1.0-seed",
+ "nodes": {
+  "SRC_NUTS": {
+   "kind": "source"
+  },
+  "SRC_COPRA_BUY": {
+   "kind": "source"
+  },
+  "V01_RECEIVING": {
+   "kind": "unit",
+   "capacity_brief": "50,000 nuts/hr"
+  },
+  "V02_CRACKING": {
+   "kind": "unit",
+   "capacity_brief": "45,000 nuts/hr",
+   "efficiency": "92\u201396%"
+  },
+  "V03_DRYING": {
+   "kind": "unit",
+   "capacity_brief": "80 MT/day",
+   "moisture": "18%\u21926%",
+   "residence": "24\u201336 hr"
+  },
+  "V04_PRESS": {
+   "kind": "unit",
+   "capacity_brief": "20 MT copra/hr",
+   "oil_yield": "62\u201365%"
+  },
+  "V05_REFINING": {
+   "kind": "unit",
+   "capacity_brief": "12 MT VCO/hr",
+   "spec": "FFA < 0.1%"
+  },
+  "V06_CARBONIZER": {
+   "kind": "unit",
+   "capacity_brief": "8 MT shell/day",
+   "T": "800 \u00b0C",
+   "atmo": "N2",
+   "cycle": "4 hr batch"
+  },
+  "V07_EVAPORATOR": {
+   "kind": "unit",
+   "capacity_brief": "5,000 L/hr",
+   "endpoint": "65 \u00b0Brix",
+   "T": "75 \u00b0C"
+  },
+  "BUF_COPRA": {
+   "kind": "storage"
+  },
+  "TANK_CRUDE_VCO": {
+   "kind": "storage"
+  },
+  "YARD_SHELL": {
+   "kind": "storage"
+  },
+  "SURGE_COCOWATER": {
+   "kind": "storage"
+  },
+  "UTIL_STEAM": {
+   "kind": "utility"
+  },
+  "UTIL_POWER": {
+   "kind": "utility"
+  },
+  "UTIL_CW": {
+   "kind": "utility"
+  },
+  "UTIL_AIR": {
+   "kind": "utility"
+  },
+  "SNK_VCO": {
+   "kind": "sink"
+  },
+  "SNK_VCO_CRUDE": {
+   "kind": "sink"
+  },
+  "SNK_MEAL": {
+   "kind": "sink"
+  },
+  "SNK_CHAR": {
+   "kind": "sink"
+  },
+  "SNK_CONC": {
+   "kind": "sink"
+  },
+  "SNK_COPRA_SALE": {
+   "kind": "sink"
+  },
+  "SNK_SHELL_SALE": {
+   "kind": "sink"
+  },
+  "SNK_WASTE": {
+   "kind": "sink"
+  }
+ },
+ "edges": [
+  {
+   "u": "SRC_NUTS",
+   "v": "V01_RECEIVING",
+   "active": true,
+   "candidate": false,
+   "stream": "process"
+  },
+  {
+   "u": "SRC_COPRA_BUY",
+   "v": "BUF_COPRA",
+   "active": false,
+   "candidate": true,
+   "option": "purchased-copra feed under nut-supply shortfall (D1/D7)"
+  },
+  {
+   "u": "V01_RECEIVING",
+   "v": "V02_CRACKING",
+   "active": true,
+   "candidate": false,
+   "stream": "process"
+  },
+  {
+   "u": "V02_CRACKING",
+   "v": "V03_DRYING",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "kernel"
+  },
+  {
+   "u": "V02_CRACKING",
+   "v": "YARD_SHELL",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "shell"
+  },
+  {
+   "u": "V02_CRACKING",
+   "v": "SURGE_COCOWATER",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "coco_water"
+  },
+  {
+   "u": "V02_CRACKING",
+   "v": "SNK_WASTE",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "husk"
+  },
+  {
+   "u": "V02_CRACKING",
+   "v": "V04_PRESS",
+   "active": false,
+   "candidate": true,
+   "option": "fresh-kernel wet route \u2014 bypass drying under dryer loss/quality shift"
+  },
+  {
+   "u": "V03_DRYING",
+   "v": "BUF_COPRA",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "copra"
+  },
+  {
+   "u": "V03_DRYING",
+   "v": "SNK_COPRA_SALE",
+   "active": false,
+   "candidate": true,
+   "option": "divert dried copra to sale at buffer overflow"
+  },
+  {
+   "u": "V04_PRESS",
+   "v": "TANK_CRUDE_VCO",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "crude_vco"
+  },
+  {
+   "u": "V04_PRESS",
+   "v": "SNK_MEAL",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "copra_meal"
+  },
+  {
+   "u": "V05_REFINING",
+   "v": "SNK_VCO",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "rbd_vco"
+  },
+  {
+   "u": "V06_CARBONIZER",
+   "v": "SNK_CHAR",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "char"
+  },
+  {
+   "u": "V07_EVAPORATOR",
+   "v": "SNK_CONC",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "concentrate"
+  },
+  {
+   "u": "BUF_COPRA",
+   "v": "V04_PRESS",
+   "active": true,
+   "candidate": false,
+   "stream": "process"
+  },
+  {
+   "u": "BUF_COPRA",
+   "v": "SNK_COPRA_SALE",
+   "active": false,
+   "candidate": true,
+   "option": "sell copra directly when press unavailable"
+  },
+  {
+   "u": "TANK_CRUDE_VCO",
+   "v": "V05_REFINING",
+   "active": true,
+   "candidate": false,
+   "stream": "process"
+  },
+  {
+   "u": "TANK_CRUDE_VCO",
+   "v": "SNK_VCO_CRUDE",
+   "active": false,
+   "candidate": true,
+   "option": "bypass refining \u2014 sell crude VCO when V05 lost"
+  },
+  {
+   "u": "YARD_SHELL",
+   "v": "V06_CARBONIZER",
+   "active": true,
+   "candidate": false,
+   "stream": "process"
+  },
+  {
+   "u": "YARD_SHELL",
+   "v": "UTIL_STEAM",
+   "active": false,
+   "candidate": true,
+   "option": "shells \u2192 boiler fuel during steam/fuel outage"
+  },
+  {
+   "u": "YARD_SHELL",
+   "v": "SNK_SHELL_SALE",
+   "active": false,
+   "candidate": true,
+   "option": "sell raw shell when carbonizer down"
+  },
+  {
+   "u": "SURGE_COCOWATER",
+   "v": "V07_EVAPORATOR",
+   "active": true,
+   "candidate": false,
+   "stream": "process"
+  },
+  {
+   "u": "SURGE_COCOWATER",
+   "v": "SNK_WASTE",
+   "active": false,
+   "candidate": true,
+   "option": "coco-water discharge route under evaporator failure"
+  },
+  {
+   "u": "SURGE_COCOWATER",
+   "v": "SNK_CONC",
+   "active": false,
+   "candidate": true,
+   "option": "sell/ship raw coco water unconcentrated (quality-permitting)"
+  },
+  {
+   "u": "UTIL_STEAM",
+   "v": "V03_DRYING",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_STEAM",
+   "v": "V05_REFINING",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_STEAM",
+   "v": "V07_EVAPORATOR",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_POWER",
+   "v": "V01_RECEIVING",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_POWER",
+   "v": "V02_CRACKING",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_POWER",
+   "v": "V03_DRYING",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_POWER",
+   "v": "V04_PRESS",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_POWER",
+   "v": "V05_REFINING",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_POWER",
+   "v": "V06_CARBONIZER",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_POWER",
+   "v": "V07_EVAPORATOR",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_POWER",
+   "v": "UTIL_AIR",
+   "active": false,
+   "candidate": true,
+   "option": "electric backup compressor line-up under air-system loss"
+  },
+  {
+   "u": "UTIL_CW",
+   "v": "V05_REFINING",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_CW",
+   "v": "V07_EVAPORATOR",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_AIR",
+   "v": "V02_CRACKING",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  },
+  {
+   "u": "UTIL_AIR",
+   "v": "V04_PRESS",
+   "active": true,
+   "candidate": false,
+   "stream": "utility"
+  }
+ ],
+ "exclusion_pairs_seed": [
+  {
+   "a": [
+    "YARD_SHELL",
+    "UTIL_STEAM"
+   ],
+   "b": [
+    "YARD_SHELL",
+    "SNK_SHELL_SALE"
+   ],
+   "basis": "single shell conveyor: cannot line up boiler-fuel and sale routes concurrently"
+  },
+  {
+   "a": [
+    "V02_CRACKING",
+    "V04_PRESS"
+   ],
+   "b": [
+    "SRC_COPRA_BUY",
+    "BUF_COPRA"
+   ],
+   "basis": "press feed mode conflict: wet-kernel and dry-copra modes are mutually exclusive line-ups"
+  },
+  {
+   "a": [
+    "TANK_CRUDE_VCO",
+    "SNK_VCO_CRUDE"
+   ],
+   "b": null,
+   "basis": "requires QA hold-and-release; exclusion vs. any V05 restart within same cycle \u2014 pair TBD at HAZOP"
+  }
+ ]
+}

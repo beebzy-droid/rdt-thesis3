@@ -1,0 +1,5 @@
+simpy>=4.0
+casadi>=3.6
+highspy>=1.7
+networkx>=3.2
+numpy>=1.26
