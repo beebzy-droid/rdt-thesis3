@@ -108,3 +108,27 @@ class TestPlantDAE:
         assert r["closure"] < 0.005, f"closure {r['closure']:.4%}"      # gate (b)
         assert r["wall_s"] < 60.0, f"wall {r['wall_s']:.1f}s"           # gate (e)
         assert abs(r["x_out_wb"] - 0.06) < 0.003                        # Table 5.1
+
+
+class TestDisruptions:
+    """D1–D8 sampler and profile properties (lifecycle Table 5.2)."""
+    def test_sampler_deterministic(self):
+        from rdt_core.disruptions import sample
+        a, b = sample("D1", 20, 7), sample("D1", 20, 7)
+        assert all(x == y for x, y in zip(a, b))          # CRN prerequisite
+
+    def test_feed_profile_envelope(self):
+        from rdt_core.disruptions import sample, feed_multiplier
+        for dp in sample("D1", 10, 3):
+            t_hold = dp.onset_hr + dp.ramp_hr + dp.duration_hr / 2
+            assert abs(feed_multiplier(dp, dp.onset_hr - 1) - 1.0) < 1e-12
+            assert abs(feed_multiplier(dp, t_hold) - (1 - dp.severity)) < 1e-9
+            t_far = dp.onset_hr + dp.ramp_hr + dp.duration_hr + 10 * dp.recovery_tau_hr
+            assert feed_multiplier(dp, t_far) > 1 - dp.severity * 1e-4
+
+    def test_unmapped_categories_refuse(self):
+        import pytest as _pt
+        from rdt_core.disruptions import sample, dae_params
+        dp = sample("D3", 1, 1)[0]
+        with _pt.raises(NotImplementedError):
+            dae_params(dp, 100.0, 12000.0)

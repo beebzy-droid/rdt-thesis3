@@ -71,6 +71,8 @@ def build_plant_dae(p: PlantParams):
     F_oil = ca.SX.sym("F_oil")                      # algebraic
     F_conc = ca.SX.sym("F_conc")                    # algebraic
     F_nuts = ca.SX.sym("F_nuts")                    # parameter (event-set)
+    y_mult = ca.SX.sym("y_mult")                    # D2/D8: press yield multiplier
+    dx_wb = ca.SX.sym("dx_wb")                      # D2/D8: inlet moisture shift, wb
 
     # --- front end (algebraic pass-through at routing fidelity) ---
     F_kernel = p.f_kernel * F_nuts                  # @ 18% wb into dryer
@@ -79,8 +81,9 @@ def build_plant_dae(p: PlantParams):
     F_ccw_in = p.f_water * F_nuts
 
     # --- dryer: 5-CSTR solids chain, constant dry-solids holdup ---
-    x_in = wb2db(p.x_in_wb)
-    Fs = F_kernel * (1 - p.x_in_wb)                 # dry solids throughput
+    x_in_wb_eff = p.x_in_wb + dx_wb
+    x_in = x_in_wb_eff / (1 - x_in_wb_eff)
+    Fs = F_kernel * (1 - x_in_wb_eff)                 # dry solids throughput
     Ms = (p.tau_dry / p.n_comp) * Fs                # per-compartment dry holdup
     dxs = [(Fs / Ms) * ((x_in if i == 0 else xs[i-1]) - xs[i])
            - p.k_dry * (xs[i] - p.x_eq) for i in range(p.n_comp)]
@@ -108,18 +111,24 @@ def build_plant_dae(p: PlantParams):
                + F_conc + F_evap_water)             # everything leaving plant
 
     ode = ca.vertcat(*dxs, dI, F_evap_dryer, F_sinks)
-    alg = ca.vertcat(F_oil - p.y_oil * F_press,                       # press yield
+    alg = ca.vertcat(F_oil - p.y_oil * y_mult * F_press,             # press yield
                      F_conc - F_evap_feed * p.brix_in / p.brix_out)   # solids balance
     x = ca.vertcat(xs, I, m_evap_d, m_out)
-    return {"x": x, "z": ca.vertcat(F_oil, F_conc), "p": F_nuts,
-            "ode": ode, "alg": alg}
+    z = ca.vertcat(F_oil, F_conc)
+    par = ca.vertcat(F_nuts, y_mult, dx_wb)
+    dae = {"x": x, "z": z, "p": par, "ode": ode, "alg": alg}
+    # instantaneous SALEABLE product mass flow (excl. waste/offgas/evap water) —
+    # returned SEPARATELY: ca.integrator() rejects unknown dict keys.
+    P_prod = F_vco + F_meal + F_char + F_conc + (F_shell - F_carb)   # excess shell sold
+    out_fn = ca.Function("prod", [x, z, par], [P_prod])
+    return dae, out_fn
 
 
 def run_nominal(days: float = 30.0, dt: float = 0.5, p: PlantParams | None = None):
     """30-day nominal campaign. Returns closure error, wall time, trajectories."""
     import time
     p = p or PlantParams()
-    dae = build_plant_dae(p)
+    dae, _out = build_plant_dae(p)
     F0 = p.nominal_nut_feed()
     intg = ca.integrator("P", "idas", dae, 0.0, dt, {"abstol": 1e-8, "reltol": 1e-8})
 
@@ -134,7 +143,7 @@ def run_nominal(days: float = 30.0, dt: float = 0.5, p: PlantParams | None = Non
     t0 = time.perf_counter()
     xk, zk = x0, z0
     for i in range(n):                                     # event-grid loop (SimPy slot)
-        r = intg(x0=xk, z0=zk, p=F0)
+        r = intg(x0=xk, z0=zk, p=[F0, 1.0, 0.0])
         xk = np.array(r["xf"]).ravel(); zk = np.array(r["zf"]).ravel()
         T.append((i + 1) * dt); X.append(xk)
     wall = time.perf_counter() - t0
