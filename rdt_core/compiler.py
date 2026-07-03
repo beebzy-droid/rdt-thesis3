@@ -40,6 +40,8 @@ class CompiledPlant:
     state_names: list
     param_names: list
     active_options: set
+    flow_edges: list = None      # [(u,v), ...] edges with modeled flows
+    flow_fn: ca.Function = None  # (x, z, p) -> flow per flow_edges [kg/hr]
 
 
 def _active(G, u, v) -> bool:
@@ -168,6 +170,39 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
              + p.w_shell * (F_shell - F_carb) - p.w_copra_buy * F_buy)
     out_fn = ca.Function("prod", [x, z, par], [P_prod, V_php])
 
+    # ---- edge-flow instrumentation (physics carriers for GAT edge features) ----
+    edge_flows = {
+        ("SRC_NUTS", "V01_RECEIVING"): F_nuts,
+        ("V01_RECEIVING", "V02_CRACKING"): F_nuts,
+        ("V02_CRACKING", "V03_DRYING"): F_kd_A,
+        ("V02_CRACKING", "YARD_SHELL"): F_shell,
+        ("V02_CRACKING", "SURGE_COCOWATER"): F_ccw_in,
+        ("V02_CRACKING", "SNK_WASTE"): F_husk,
+        ("V03_DRYING", "BUF_COPRA"): F_copra_A,
+        ("BUF_COPRA", "V04_PRESS"): F_press,
+        ("V04_PRESS", "TANK_CRUDE_VCO"): F_oil + oil_wet,
+        ("V04_PRESS", "SNK_MEAL"): F_meal + cake_wet,
+        ("TANK_CRUDE_VCO", "V05_REFINING"): F_refine,
+        ("V05_REFINING", "SNK_VCO"): F_vco,
+        ("YARD_SHELL", "V06_CARBONIZER"): F_carb,
+        ("V06_CARBONIZER", "SNK_CHAR"): F_char,
+        ("YARD_SHELL", "SNK_SHELL_SALE"): F_shell - F_carb,
+        ("SURGE_COCOWATER", "V07_EVAPORATOR"): F_evap_feed,
+        ("V07_EVAPORATOR", "SNK_CONC"): F_conc,
+    }
+    if has_crude:
+        edge_flows[("TANK_CRUDE_VCO", "SNK_VCO_CRUDE")] = F_crude_sale
+    if has_wet:
+        edge_flows[("V02_CRACKING", "V04_PRESS")] = F_wet
+    if has_buy:
+        edge_flows[("SRC_COPRA_BUY", "BUF_COPRA")] = F_buy
+    if has_solar:
+        edge_flows[("V02_CRACKING", "V03B_SOLAR")] = F_kd_B
+        edge_flows[("V03B_SOLAR", "BUF_COPRA")] = F_copra_B
+    fe = sorted(edge_flows)
+    flow_fn = ca.Function("flows", [x, z, par],
+                          [ca.vertcat(*[edge_flows[e] for e in fe])])
+
     names = [f"x_dryA_{i}" for i in range(n_c)]
     if has_solar:
         names += [f"x_dryB_{i}" for i in range(n_c)]
@@ -175,7 +210,8 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     return CompiledPlant(dae=dae, out_fn=out_fn, state_names=names,
                          param_names=["F_nuts", "y_mult", "dx_wb",
                                       "h_dry", "h_press", "h_ref"],
-                         active_options=active_opts)
+                         active_options=active_opts,
+                         flow_edges=fe, flow_fn=flow_fn)
 
 
 def apply_change(G: nx.DiGraph, edges: list[tuple], activate: bool = True):

@@ -130,3 +130,40 @@ class TestC4TopologyVariation:
 
         dR = rphp(c1, x0_new) - rphp(c0, X0_LEGACY)
         assert dR > 0.05, f"solar rescue dR={dR:.4f}"
+
+
+class TestFeaturesAndDataset:
+    def test_feature_shapes_and_flow_sanity(self):
+        import casadi as ca
+        from rdt_core import features as ft
+        from rdt_core.plant_dae import PlantParams, wb2db
+        import numpy as np
+        p = PlantParams(); F0 = p.nominal_nut_feed()
+        G0 = _gmax_all_inactive(); c = compile_plant(G0, p)
+        intg = _mk(c.dae)
+        xk, zk = X0_LEGACY.copy(), np.zeros(2)
+        par = [F0, 1.0, 0.0, 1.0, 1.0, 1.0]
+        for _ in range(400):                       # settle to steady state
+            r = intg(x0=xk, z0=zk, p=par)
+            xk = np.array(r["xf"]).ravel(); zk = np.array(r["zf"]).ravel()
+        _, nodes, edges = ft.universe()
+        Xv, Xe = ft.extract(c, G0, xk, zk, par, nodes, edges)
+        assert Xv.shape == (29, ft.D_V) and Xe.shape == (50, ft.D_E)
+        fl = dict(zip(c.flow_edges, np.array(c.flow_fn(xk, zk, par)).ravel()))
+        # steady-state flow sanity vs Table 5.1 design values
+        assert abs(fl[("SRC_NUTS", "V01_RECEIVING")] - F0) < 1e-6
+        cop = fl[("V03_DRYING", "BUF_COPRA")]
+        assert abs(cop - 80_000 / 24) / (80_000 / 24) < 0.02       # 80 MT/day
+        vco = fl[("V05_REFINING", "SNK_VCO")]
+        press = fl[("BUF_COPRA", "V04_PRESS")]
+        assert abs(vco - p.y_refine * p.y_oil * press) / vco < 0.02
+        # inactive candidate edges must carry zero active-flag and zero flow
+        j = edges.index(("TANK_CRUDE_VCO", "SNK_VCO_CRUDE"))
+        assert Xe[j, 1] == 0.0 and Xe[j, 0] == 0.0
+
+    def test_delta_multihot(self):
+        from rdt_core import features as ft
+        _, _, edges = ft.universe()
+        v = ft.delta_multihot(edges, [("V02_CRACKING", "V03B_SOLAR"),
+                                      ("V03B_SOLAR", "BUF_COPRA")])
+        assert v.sum() == 2.0 and v.shape == (50,)
