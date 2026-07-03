@@ -94,10 +94,10 @@ def quality_shift(dp: DisruptionParams, t: float) -> tuple[float, float]:
     return dp.dx_wb * depth, 1.0 - (1.0 - dp.y_mult) * depth
 
 
-def dae_params(dp: DisruptionParams, t: float, F0: float,
-               u_crude: float = 0.0) -> list[float]:
-    """Map to plant_dae 7-vector [F_nuts, y_mult, dx_wb, h_dry, h_press, h_ref, u_crude].
-    u_crude is the ΔG decision input (0 = static twin, 1 = bypass active)."""
+def dae_params(dp: DisruptionParams, t: float, F0: float, u_crude: float = 0.0,
+               u_wet: float = 0.0, u_buy: float = 0.0) -> list[float]:
+    """Map to plant_dae 9-vector [F_nuts, y_mult, dx_wb, h_dry, h_press, h_ref,
+    u_crude, u_wet, u_buy]. u_* are the ΔG decision inputs (0 = static twin)."""
     if dp.category not in MAPPED_V0:
         raise NotImplementedError(f"{dp.category} requires full topology-DAE")
     h = {"dry": 1.0, "press": 1.0, "refine": 1.0}
@@ -114,4 +114,4 @@ def dae_params(dp: DisruptionParams, t: float, F0: float,
         for k in h:
             h[k] = 1.0 - depth                        # utility derates all units
         fm = 1.0
-    return [F0 * fm, ym, dx, h["dry"], h["press"], h["refine"], u_crude]
+    return [F0 * fm, ym, dx, h["dry"], h["press"], h["refine"], u_crude, u_wet, u_buy]

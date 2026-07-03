@@ -21,13 +21,13 @@ N_PER_CAT = 125
 SEED0 = 20260703
 
 
-def run_one(dp, p, intg, out_fn, F0, x0, z0, u_crude=0.0):
+def run_one(dp, p, intg, out_fn, F0, x0, z0, u_crude=0.0, u_wet=0.0, u_buy=0.0):
     n = int(DAYS * 24 / DT)
     xk, zk = x0.copy(), z0.copy()
     t_grid = np.arange(1, n + 1) * DT
     P = np.empty(n); V = np.empty(n)
     for i, t in enumerate(t_grid):
-        par = dae_params(dp, t - DT, F0, u_crude)     # piecewise-constant over step
+        par = dae_params(dp, t - DT, F0, u_crude, u_wet, u_buy)
         r = intg(x0=xk, z0=zk, p=par)
         xk = np.array(r["xf"]).ravel(); zk = np.array(r["zf"]).ravel()
         o = out_fn(xk, zk, par); P[i] = float(o[0]); V[i] = float(o[1])

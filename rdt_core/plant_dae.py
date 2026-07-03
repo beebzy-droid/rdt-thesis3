@@ -58,6 +58,8 @@ class PlantParams:
     w_char: float = 32.0
     w_conc: float = 100.0
     w_shell: float = 8.0
+    w_copra_buy: float = 40.0       # purchased copra COST, PHP/kg [est.; verify PCA copra price]
+    y_wet: float = 0.30             # wet-kernel press oil yield [est.; vs 0.63 dry route]
     # --- capacity/storage constraints (exposed by paired demo 2026-07-03:
     #     unbounded tank + uncapped drawdown made static arm unphysically strong) ---
     cap_press: float = 20_000.0     # kg copra/hr (Table 5.1)
@@ -92,6 +94,8 @@ def build_plant_dae(p: PlantParams):
     h_press = ca.SX.sym("h_press")                  # D3/D4: press availability [0,1]
     h_ref = ca.SX.sym("h_ref")                      # D3/D4: refining availability [0,1]
     u_crude = ca.SX.sym("u_crude")                  # ΔG: crude-VCO sale bypass {0,1}
+    u_wet = ca.SX.sym("u_wet")                      # ΔG: wet-kernel route V02→V04 {0,1}
+    u_buy = ca.SX.sym("u_buy")                      # ΔG: purchased copra → buffer {0,1}
 
     # --- front end (algebraic pass-through at routing fidelity) ---
     F_kernel = p.f_kernel * F_nuts                  # @ 18% wb into dryer
@@ -102,8 +106,12 @@ def build_plant_dae(p: PlantParams):
     # --- dryer: 5-CSTR solids chain, constant dry-solids holdup ---
     x_in_wb_eff = p.x_in_wb + dx_wb
     x_in = x_in_wb_eff / (1 - x_in_wb_eff)
-    F_kernel_dry = h_dry * F_kernel                 # (1-h_dry) spoils -> waste [v0]
-    F_spoil = F_kernel - F_kernel_dry
+    F_kernel_dry = h_dry * F_kernel
+    # wet route is gated by tank headroom too (fix 2026-07-03: ungated wet oil
+    # drove I_vco onto the gate kink -> IDACalcIC linesearch failure; also the
+    # physics: no operator presses into a full crude tank)
+    F_wet_raw = u_wet * (F_kernel - F_kernel_dry)
+    F_spoil_pre = F_kernel - F_kernel_dry - F_wet_raw
     Fs = F_kernel_dry * (1 - x_in_wb_eff)                 # dry solids throughput
     Ms = (p.tau_dry / p.n_comp) * Fs                # per-compartment dry holdup
     dxs = [(Fs / Ms) * ((x_in if i == 0 else xs[i-1]) - xs[i])
@@ -112,43 +120,52 @@ def build_plant_dae(p: PlantParams):
     F_evap_dryer = F_kernel - F_copra               # water removed
 
     # --- buffers with first-order draws (linear ⇒ CVODE-friendly) ---
-    gate_tank = ca.fmax(0, ca.fmin(1, (p.I_crude_max - I[1]) / p.gate_band))
+    F_copra_nom = 80_000.0 / 24                     # Table 5.1 design copra rate
+    F_buy = u_buy * ca.fmax(0, F_copra_nom - F_copra)   # ΔG: buy the deficit
+    # C-infinity gate (tanh) replaces C0 clip: IDAS BDF + calc_ic robust at band edge
+    gate_tank = 0.5 * (1 + ca.tanh((p.I_crude_max - I[1] - p.gate_band / 2)
+                                   / (p.gate_band / 4)))
     F_press = ca.fmin(h_press * gate_tank * I[0] / p.tau_buf,
                       h_press * gate_tank * p.cap_press)   # full tank throttles press
+    F_wet = gate_tank * F_wet_raw                   # gated wet line-up
+    F_spoil = F_spoil_pre + (F_wet_raw - F_wet)     # ungated surplus spoils
     F_meal = F_press - F_oil                        # by mass difference
     F_tank_out = I[1] / p.tau_tank                  # crude tank draw demand
     F_refine = ca.fmin(h_ref * F_tank_out, p.cap_refine)   # V05 capacity-capped
     F_crude_sale = u_crude * (F_tank_out - F_refine)        # ΔG: sell what V05 can't take
     F_vco = p.y_refine * F_refine
     F_ref_loss = F_refine - F_vco
+    oil_wet = p.y_wet * y_mult * F_wet              # wet route: lower yield
+    cake_wet = F_wet - oil_wet                      # wet cake, meal-value proxy [est.]
     F_carb = p.cap_carb * I[2] / (I[2] + p.K_sat)   # saturating draw ≤ capacity
     F_char = p.y_char * F_carb
     F_offgas = F_carb - F_char
     F_evap_feed = ca.fmin(I[3] / p.tau_surge, p.cap_evap)
     F_evap_water = F_evap_feed - F_conc
 
-    dI = ca.vertcat(F_copra - F_press,
-                    F_oil - F_refine - F_crude_sale,
+    dI = ca.vertcat(F_copra + F_buy - F_press,
+                    F_oil + oil_wet - F_refine - F_crude_sale,
                     F_shell - F_carb,
                     F_ccw_in - F_evap_feed)
 
     F_sinks = (F_husk + F_meal + F_vco + F_ref_loss + F_char + F_offgas
-               + F_conc + F_evap_water + F_crude_sale + F_spoil)
+               + F_conc + F_evap_water + F_crude_sale + F_spoil + cake_wet)
 
     ode = ca.vertcat(*dxs, dI, F_evap_dryer, F_sinks)
     alg = ca.vertcat(F_oil - p.y_oil * y_mult * F_press,             # press yield
                      F_conc - F_evap_feed * p.brix_in / p.brix_out)   # solids balance
     x = ca.vertcat(xs, I, m_evap_d, m_out)
     z = ca.vertcat(F_oil, F_conc)
-    par = ca.vertcat(F_nuts, y_mult, dx_wb, h_dry, h_press, h_ref, u_crude)
+    par = ca.vertcat(F_nuts, y_mult, dx_wb, h_dry, h_press, h_ref, u_crude, u_wet, u_buy)
     dae = {"x": x, "z": z, "p": par, "ode": ode, "alg": alg}
     # outputs (separate: ca.integrator() rejects unknown dict keys):
     #   P_mass [kg/hr] saleable mass;  V_php [PHP/hr] value-weighted throughput
     #   (Eq. 2.16 margin-weighted option — MANDATORY per finding #3, 2026-07-03)
-    P_prod = F_vco + F_meal + F_char + F_conc + F_crude_sale + (F_shell - F_carb)
-    V_php = (p.w_vco * F_vco + p.w_meal * F_meal + p.w_char * F_char
+    P_prod = (F_vco + F_meal + cake_wet + F_char + F_conc + F_crude_sale
+              + (F_shell - F_carb))
+    V_php = (p.w_vco * F_vco + p.w_meal * (F_meal + cake_wet) + p.w_char * F_char
              + p.w_conc * F_conc + p.w_crude * F_crude_sale
-             + p.w_shell * (F_shell - F_carb))
+             + p.w_shell * (F_shell - F_carb) - p.w_copra_buy * F_buy)
     out_fn = ca.Function("prod", [x, z, par], [P_prod, V_php])
     return dae, out_fn
 
@@ -172,7 +189,7 @@ def run_nominal(days: float = 30.0, dt: float = 0.5, p: PlantParams | None = Non
     t0 = time.perf_counter()
     xk, zk = x0, z0
     for i in range(n):                                     # event-grid loop (SimPy slot)
-        r = intg(x0=xk, z0=zk, p=[F0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0])
+        r = intg(x0=xk, z0=zk, p=[F0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0])
         xk = np.array(r["xf"]).ravel(); zk = np.array(r["zf"]).ravel()
         T.append((i + 1) * dt); X.append(xk)
     wall = time.perf_counter() - t0
