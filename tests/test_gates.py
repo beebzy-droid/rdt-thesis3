@@ -127,8 +127,15 @@ class TestDisruptions:
             assert feed_multiplier(dp, t_far) > 1 - dp.severity * 1e-4
 
     def test_unmapped_categories_refuse(self):
+        """D5/D6 still require the full topology-DAE; D3/D4 mapped 2026-07-03."""
         import pytest as _pt
         from rdt_core.disruptions import sample, dae_params
-        dp = sample("D3", 1, 1)[0]
         with _pt.raises(NotImplementedError):
-            dae_params(dp, 100.0, 12000.0)
+            dae_params(sample("D5", 1, 1)[0], 100.0, 12000.0)
+
+    def test_d3_outage_maps_to_health(self):
+        from rdt_core.disruptions import sample, dae_params
+        dp = sample("D3", 3, 2)[0]
+        pin = dae_params(dp, dp.onset_hr + 1.0, 12000.0)
+        pout = dae_params(dp, dp.onset_hr + dp.duration_hr + 1.0, 12000.0)
+        assert min(pin[3:6]) == 0.0 and min(pout[3:6]) == 1.0

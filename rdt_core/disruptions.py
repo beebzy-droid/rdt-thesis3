@@ -25,6 +25,7 @@ class DisruptionParams:
     recovery_tau_hr: float   # exponential recovery time constant [hr]
     dx_wb: float = 0.0       # inlet-moisture shift, wet basis points [-]
     y_mult: float = 1.0      # press oil-yield multiplier [-]
+    unit: str = ""           # D3: failed unit in {dry, press, refine}
 
 
 # Table 5.2 ranges. Each entry: dict of param -> (lo, hi). [verify] anchors per doc.
@@ -46,7 +47,8 @@ RANGES = {
     "D8": dict(severity=(0.30, 0.95), ramp_hr=(0, 48), duration_hr=(72, 1440),
                recovery_tau_hr=(24, 240), dx_wb=(0.02, 0.08), y_mult=(0.80, 0.95)),
 }
-MAPPED_V0 = ("D1", "D2", "D7", "D8")
+MAPPED_V0 = ("D1", "D2", "D3", "D4", "D7", "D8")
+D3_UNITS = ("dry", "press", "refine")   # failure-rate weights uniform [est.]
 ONSET_RANGE = (48.0, 120.0)   # onset inside a 30-day window, after warm-up
 
 
@@ -62,8 +64,11 @@ def sample(category: str, n: int, seed: int) -> list[DisruptionParams]:
             lo, hi = RANGES[category][k]
             kw[k] = lo + (hi - lo) * u[i, j]
         onset = ONSET_RANGE[0] + (ONSET_RANGE[1] - ONSET_RANGE[0]) * u[i, -1]
-        out.append(DisruptionParams(category=category, seed=seed * 100_000 + i,
-                                    onset_hr=onset, **kw))
+        dp = DisruptionParams(category=category, seed=seed * 100_000 + i,
+                              onset_hr=onset, **kw)
+        if category == "D3":
+            dp.unit = D3_UNITS[i % len(D3_UNITS)]     # stratified unit assignment
+        out.append(dp)
     return out
 
 
@@ -89,10 +94,24 @@ def quality_shift(dp: DisruptionParams, t: float) -> tuple[float, float]:
     return dp.dx_wb * depth, 1.0 - (1.0 - dp.y_mult) * depth
 
 
-def dae_params(dp: DisruptionParams, t: float, F0: float) -> list[float]:
-    """Map a v0-supported category to the plant_dae parameter vector."""
+def dae_params(dp: DisruptionParams, t: float, F0: float,
+               u_crude: float = 0.0) -> list[float]:
+    """Map to plant_dae 7-vector [F_nuts, y_mult, dx_wb, h_dry, h_press, h_ref, u_crude].
+    u_crude is the ΔG decision input (0 = static twin, 1 = bypass active)."""
     if dp.category not in MAPPED_V0:
-        raise NotImplementedError(f"{dp.category} requires topology-DAE (next commit)")
-    fm = feed_multiplier(dp, t) if dp.category not in ("D2",) else 1.0
-    dx, ym = quality_shift(dp, t)
-    return [F0 * fm, ym, dx]
+        raise NotImplementedError(f"{dp.category} requires full topology-DAE")
+    h = {"dry": 1.0, "press": 1.0, "refine": 1.0}
+    fm, dx, ym = 1.0, 0.0, 1.0
+    if dp.category in ("D1", "D7", "D8"):
+        fm = feed_multiplier(dp, t)
+    if dp.category in ("D2", "D8"):
+        dx, ym = quality_shift(dp, t)
+    if dp.category == "D3":
+        in_outage = dp.onset_hr <= t < dp.onset_hr + dp.duration_hr
+        h[dp.unit] = 0.0 if in_outage else 1.0        # hard outage, TTR = duration
+    if dp.category == "D4":
+        depth = 1.0 - feed_multiplier(dp, t)          # reuse envelope
+        for k in h:
+            h[k] = 1.0 - depth                        # utility derates all units
+        fm = 1.0
+    return [F0 * fm, ym, dx, h["dry"], h["press"], h["refine"], u_crude]

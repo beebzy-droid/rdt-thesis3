@@ -21,25 +21,26 @@ N_PER_CAT = 125
 SEED0 = 20260703
 
 
-def run_one(dp, p, intg, out_fn, F0, x0, z0):
+def run_one(dp, p, intg, out_fn, F0, x0, z0, u_crude=0.0):
     n = int(DAYS * 24 / DT)
     xk, zk = x0.copy(), z0.copy()
     t_grid = np.arange(1, n + 1) * DT
-    P = np.empty(n)
+    P = np.empty(n); V = np.empty(n)
     for i, t in enumerate(t_grid):
-        par = dae_params(dp, t - DT, F0)              # piecewise-constant over step
+        par = dae_params(dp, t - DT, F0, u_crude)     # piecewise-constant over step
         r = intg(x0=xk, z0=zk, p=par)
         xk = np.array(r["xf"]).ravel(); zk = np.array(r["zf"]).ravel()
-        P[i] = float(out_fn(xk, zk, par))
+        o = out_fn(xk, zk, par); P[i] = float(o[0]); V[i] = float(o[1])
     # nominal P0: mean over the pre-onset settled window (last 24 h before onset)
     pre = (t_grid > dp.onset_hr - 24) & (t_grid <= dp.onset_hr)
-    P0 = P[pre].mean()
+    P0, V0 = P[pre].mean(), V[pre].mean()
     win = (t_grid > dp.onset_hr) & (t_grid <= dp.onset_hr + R_WINDOW)
-    R = float(np.mean(P[win] / P0))                   # Eq. 2.16, discrete
+    R = float(np.mean(P[win] / P0))                   # Eq. 2.16 mass basis
+    R_php = float(np.mean(V[win] / V0))               # Eq. 2.16 VALUE basis (primary)
     # TTR80 (corrected 2026-07-03): time from onset to sustained (6 hr) return to
     # >= 0.8, measured only AFTER first impairment (ratio < 0.8). Never impaired
     # within window -> 0.0. Impaired and never returns in sim window -> NaN.
-    ratio = P / P0
+    ratio = V / V0                                    # TTR80 on value basis
     post = np.where(t_grid > dp.onset_hr)[0]
     k6 = int(6 / DT)
     below = post[ratio[post] < 0.8]
@@ -51,7 +52,7 @@ def run_one(dp, p, intg, out_fn, F0, x0, z0):
             if j + k6 <= n and np.all(ratio[j:j + k6] >= 0.8):
                 ttr80 = t_grid[j] - dp.onset_hr
                 break
-    return R, ttr80, P0
+    return R, R_php, ttr80, P0, V0
 
 
 def main(categories=None, out_path="data/pilot_baseline.parquet", append=False):
@@ -69,12 +70,13 @@ def main(categories=None, out_path="data/pilot_baseline.parquet", append=False):
     rows, t0 = [], time.perf_counter()
     for cat in categories:
         for dp in sample(cat, N_PER_CAT, SEED0):
-            R, ttr, P0 = run_one(dp, p, intg, out_fn, F0, x0, z0)
+            R, Rp, ttr, P0, V0 = run_one(dp, p, intg, out_fn, F0, x0, z0)
             rows.append(dict(category=cat, seed=dp.seed, severity=dp.severity,
                              onset_hr=dp.onset_hr, ramp_hr=dp.ramp_hr,
                              duration_hr=dp.duration_hr, tau_rec=dp.recovery_tau_hr,
                              dx_wb=dp.dx_wb, y_mult=dp.y_mult,
-                             R72=R, TTR80_hr=ttr, P0_kg_hr=P0,
+                             R72_mass=R, R72_php=Rp, TTR80_hr=ttr,
+                             P0_kg_hr=P0, V0_php_hr=V0, unit=dp.unit,
                              data_class="SYNTHETIC/physics-forward-model"))
     wall = time.perf_counter() - t0
     df = pd.DataFrame(rows)
@@ -85,8 +87,8 @@ def main(categories=None, out_path="data/pilot_baseline.parquet", append=False):
     print(f"pilot baseline library: {len(df)} runs in {wall:.1f} s "
           f"({wall/len(df)*1000:.0f} ms/run)")
     g = df.groupby("category").agg(
-        n=("R72", "size"), R_mean=("R72", "mean"), R_p5=("R72", lambda s: s.quantile(.05)),
-        R_p95=("R72", lambda s: s.quantile(.95)),
+        n=("R72_php", "size"), R_php=("R72_php", "mean"), R_mass=("R72_mass", "mean"),
+        R_php_p5=("R72_php", lambda s: s.quantile(.05)),
         TTR80_med=("TTR80_hr", "median"),
         frac_no_recovery=("TTR80_hr", lambda s: s.isna().mean()))
     print(g.round(3).to_string())
