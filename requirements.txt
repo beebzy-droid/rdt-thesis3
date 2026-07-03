@@ -3,3 +3,6 @@ casadi>=3.6
 highspy>=1.7
 networkx>=3.2
 numpy>=1.26
+scipy>=1.11
+pandas>=2.0
+pyarrow>=14.0

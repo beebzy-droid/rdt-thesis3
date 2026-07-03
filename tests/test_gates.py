@@ -13,10 +13,12 @@ from rdt_core import icpc_graph as icpc
 
 
 # ------------------------------------------------------------------ R1 gate
+@pytest.fixture(scope="module")
+def traj():
+    return run_scenario([(0.0, 4000.0), (250.0, 2000.0)], 600.0, ToyParams())
+
+
 class TestR1Gate:
-    @pytest.fixture(scope="class")
-    def traj(self):
-        return run_scenario([(0.0, 4000.0), (250.0, 2000.0)], 600.0, ToyParams())
 
     @pytest.mark.parametrize("t_lo,F", [(240.0, 4000.0), (590.0, 2000.0)])
     def test_steady_state_match(self, traj, t_lo, F):
