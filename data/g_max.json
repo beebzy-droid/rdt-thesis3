@@ -1,10 +1,16 @@
 {
- "version": "0.1.0-seed",
+ "version": "0.2.0-walkthrough-r1",
  "nodes": {
   "SRC_NUTS": {
    "kind": "source"
   },
   "SRC_COPRA_BUY": {
+   "kind": "source"
+  },
+  "SRC_SHELL_BUY": {
+   "kind": "source"
+  },
+  "UTIL_GENSET": {
    "kind": "source"
   },
   "V01_RECEIVING": {
@@ -44,6 +50,12 @@
    "capacity_brief": "5,000 L/hr",
    "endpoint": "65 \u00b0Brix",
    "T": "75 \u00b0C"
+  },
+  "V03B_SOLAR": {
+   "kind": "unit",
+   "candidate_node": true,
+   "capacity_brief": "solar dryer train [est. 40 MT/day]",
+   "note": "brief lists drying as solar+mech; second train enables rerouting (\u00a71.3)"
   },
   "BUF_COPRA": {
    "kind": "storage"
@@ -92,6 +104,9 @@
   },
   "SNK_WASTE": {
    "kind": "sink"
+  },
+  "SNK_NUT_SALE": {
+   "kind": "sink"
   }
  },
  "edges": [
@@ -103,6 +118,13 @@
    "stream": "process"
   },
   {
+   "u": "SRC_NUTS",
+   "v": "V02_CRACKING",
+   "active": false,
+   "candidate": true,
+   "option": "receiving bypass for pre-graded contracted lots (V01 loss)"
+  },
+  {
    "u": "SRC_COPRA_BUY",
    "v": "BUF_COPRA",
    "active": false,
@@ -110,11 +132,32 @@
    "option": "purchased-copra feed under nut-supply shortfall (D1/D7)"
   },
   {
+   "u": "SRC_SHELL_BUY",
+   "v": "YARD_SHELL",
+   "active": false,
+   "candidate": true,
+   "option": "purchased shell sustains carbonizer under nut shortfall (D1/D7)"
+  },
+  {
+   "u": "UTIL_GENSET",
+   "v": "UTIL_POWER",
+   "active": false,
+   "candidate": true,
+   "option": "diesel genset backup under grid brownout (D4 \u2014 PH grid)"
+  },
+  {
    "u": "V01_RECEIVING",
    "v": "V02_CRACKING",
    "active": true,
    "candidate": false,
    "stream": "process"
+  },
+  {
+   "u": "V01_RECEIVING",
+   "v": "SNK_NUT_SALE",
+   "active": false,
+   "candidate": true,
+   "option": "sell graded whole nuts under downstream cascade failure (D6)"
   },
   {
    "u": "V02_CRACKING",
@@ -156,6 +199,21 @@
    "option": "fresh-kernel wet route \u2014 bypass drying under dryer loss/quality shift"
   },
   {
+   "u": "V02_CRACKING",
+   "v": "UTIL_STEAM",
+   "active": false,
+   "candidate": true,
+   "option": "husk as boiler solid fuel (standard PH mill practice)"
+  },
+  {
+   "u": "V02_CRACKING",
+   "v": "V03B_SOLAR",
+   "active": false,
+   "candidate": true,
+   "option": "solar dryer train feed",
+   "group": "solar_train"
+  },
+  {
    "u": "V03_DRYING",
    "v": "BUF_COPRA",
    "active": true,
@@ -195,6 +253,13 @@
    "material": "rbd_vco"
   },
   {
+   "u": "V05_REFINING",
+   "v": "TANK_CRUDE_VCO",
+   "active": false,
+   "candidate": true,
+   "option": "off-spec refined VCO recycle to crude tank"
+  },
+  {
    "u": "V06_CARBONIZER",
    "v": "SNK_CHAR",
    "active": true,
@@ -203,12 +268,27 @@
    "material": "char"
   },
   {
+   "u": "V06_CARBONIZER",
+   "v": "UTIL_STEAM",
+   "active": false,
+   "candidate": true,
+   "option": "carbonizer waste-heat recovery to LP steam"
+  },
+  {
    "u": "V07_EVAPORATOR",
    "v": "SNK_CONC",
    "active": true,
    "candidate": false,
    "stream": "process",
    "material": "concentrate"
+  },
+  {
+   "u": "V03B_SOLAR",
+   "v": "BUF_COPRA",
+   "active": false,
+   "candidate": true,
+   "option": "solar dryer train discharge",
+   "group": "solar_train"
   },
   {
    "u": "BUF_COPRA",
@@ -223,6 +303,13 @@
    "active": false,
    "candidate": true,
    "option": "sell copra directly when press unavailable"
+  },
+  {
+   "u": "BUF_COPRA",
+   "v": "SNK_WASTE",
+   "active": false,
+   "candidate": true,
+   "option": "condemned-copra divert \u2014 aflatoxin/mold rejection (D2)"
   },
   {
    "u": "TANK_CRUDE_VCO",
@@ -247,17 +334,18 @@
   },
   {
    "u": "YARD_SHELL",
+   "v": "SNK_SHELL_SALE",
+   "active": true,
+   "candidate": false,
+   "stream": "process",
+   "material": "shell_excess"
+  },
+  {
+   "u": "YARD_SHELL",
    "v": "UTIL_STEAM",
    "active": false,
    "candidate": true,
    "option": "shells \u2192 boiler fuel during steam/fuel outage"
-  },
-  {
-   "u": "YARD_SHELL",
-   "v": "SNK_SHELL_SALE",
-   "active": false,
-   "candidate": true,
-   "option": "sell raw shell when carbonizer down"
   },
   {
    "u": "SURGE_COCOWATER",
@@ -416,6 +504,28 @@
    ],
    "b": null,
    "basis": "requires QA hold-and-release; exclusion vs. any V05 restart within same cycle \u2014 pair TBD at HAZOP"
+  },
+  {
+   "a": [
+    "V02_CRACKING",
+    "UTIL_STEAM"
+   ],
+   "b": [
+    "YARD_SHELL",
+    "UTIL_STEAM"
+   ],
+   "basis": "single solid-fuel feeder line to boiler: husk and shell fuel line-ups mutually exclusive"
+  },
+  {
+   "a": [
+    "V05_REFINING",
+    "TANK_CRUDE_VCO"
+   ],
+   "b": [
+    "TANK_CRUDE_VCO",
+    "SNK_VCO_CRUDE"
+   ],
+   "basis": "crude tank outlet manifold: recycle receipt and crude-sale dispatch line-ups conflict"
   }
  ]
 }

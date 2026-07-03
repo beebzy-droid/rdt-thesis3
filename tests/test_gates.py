@@ -59,9 +59,11 @@ class TestICPCGraph:
 
     def test_gmax_counts(self):
         G = icpc.build_g_max()
-        assert len(icpc.units(G)) == 7                      # Table 5.1 exactly
-        assert sum(1 for *_, a in G.edges(data=True) if a["candidate"]) == 10
-        assert G.number_of_nodes() >= 18                    # lifecycle §2.1.1
+        assert len(icpc.units(G)) == 7                      # Table 5.1 core exactly
+        n_cand = sum(1 for *_, a in G.edges(data=True) if a["candidate"])
+        assert n_cand == 19
+        assert 45 <= G.number_of_edges() <= 60              # lifecycle §2.1.2 band
+        assert G.number_of_nodes() >= 18
 
     def test_every_candidate_edge_is_new(self):
         """No candidate duplicates a nominal edge (superstructure hygiene)."""
@@ -69,12 +71,40 @@ class TestICPCGraph:
         cand = {(u, v) for u, v, _ in icpc.CANDIDATE_EDGES}
         assert not (nom & cand)
 
-    def test_single_candidate_activation_stays_feasible(self):
-        """Each single-edge activation on nominal must pass the filter
-        (a candidate that breaks structure alone is mis-specified)."""
-        for u, v, a in icpc.CANDIDATE_EDGES:
+    def test_each_option_activation_stays_feasible(self):
+        """Every ΔG activation unit (single edge, or full OPTION_GROUP) applied
+        to nominal must pass the filter — a mis-specified option fails here."""
+        grouped = {e for edges in icpc.OPTION_GROUPS.values() for e in edges}
+        singles = [[(u, v, a)] for u, v, a in icpc.CANDIDATE_EDGES
+                   if (u, v) not in grouped]
+        groups = [[(u, v, dict(icpc.build_g_max().edges[u, v]))
+                   for u, v in edges] for edges in icpc.OPTION_GROUPS.values()]
+        for change in singles + groups:
             G = icpc.build_nominal()
-            G.add_node(u, **icpc.NODES[u]); G.add_node(v, **icpc.NODES[v])
-            G.add_edge(u, v, active=True, candidate=True, **a)
+            for u, v, a in change:
+                for n in (u, v):
+                    if n not in G:
+                        G.add_node(n, **icpc.NODES[n])
+                G.add_edge(u, v, **{**a, "active": True})
             r = structural_feasibility(G, icpc.units(G), icpc.sources(G), icpc.sinks(G))
-            assert r["passes"], (u, v, r["violations"])
+            assert r["passes"], (change, r["violations"])
+
+    def test_partial_group_activation_is_infeasible(self):
+        """Activating only half the solar-train group must FAIL the filter —
+        this is the property that makes option groups the ΔG unit."""
+        G = icpc.build_nominal()
+        G.add_node("V03B_SOLAR", **icpc.NODES["V03B_SOLAR"])
+        G.add_edge("V02_CRACKING", "V03B_SOLAR", active=True)
+        r = structural_feasibility(G, icpc.units(G) | {"V03B_SOLAR"},
+                                   icpc.sources(G), icpc.sinks(G))
+        assert not r["passes"]
+
+
+class TestPlantDAE:
+    """Weeks 8–18 exit criteria (lifecycle §5.1.2 verification (b), (e))."""
+    def test_thirty_day_gates(self):
+        from rdt_core.plant_dae import run_nominal
+        r = run_nominal(30.0)
+        assert r["closure"] < 0.005, f"closure {r['closure']:.4%}"      # gate (b)
+        assert r["wall_s"] < 60.0, f"wall {r['wall_s']:.1f}s"           # gate (e)
+        assert abs(r["x_out_wb"] - 0.06) < 0.003                        # Table 5.1
