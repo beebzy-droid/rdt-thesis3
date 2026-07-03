@@ -18,3 +18,5 @@ or the claim structure. This register feeds the thesis Methods/Discussion direct
 Standing implication of #10: H4 (ΔR≥0.15) is achievable by a LEARNED decision layer
 with only 3 of 19 options wired (0.178 > 0.15 on D1/D3/D4/D8, n=160 scenarios).
 The remaining option portfolio and D5/D6 raise the ceiling.
+| 11 | 07-03 | Graph→DAE compiler: topology is runtime data (§3.1.3 claim executable) | C1 equivalence 1.37e-14 all legacy topologies (⇒ 480 labels compiler-valid); compile+integrator 3.1 ms vs 40,000 ms §2.7 budget | Compiler is production path; legacy model demoted to reference | this |
+| 12 | 07-03 | First multi-edge topology ΔG (solar train, +5 states, warm-start remap): full-yield capacity-limited solar vs full-throughput low-yield wet route trade | solar dR: D3 +0.092, D4 +0.195 (beats wet 0.185); 4-option oracle raises D3/D4 ceiling | Option-portfolio effects are real; labels carry n_edges_changed | this |
