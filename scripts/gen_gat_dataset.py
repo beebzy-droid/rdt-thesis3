@@ -5,7 +5,7 @@ to DECISION TIME (onset + 1 h detection-delay assumption [est.; BOCPD replaces t
 in Phase 4]), extract the §2.1.1 feature snapshot, and attach every option row of
 that scenario as one record:
     X_V [29×12], X_E [50×8], dG multi-hot [50], y = dR_php
-Fixed shapes over the G_max universe → data/gat_dataset_v0.npz (+ index parquet).
+Fixed shapes over the G_max universe → data/gat_dataset_v1.npz (+ index parquet).
 Framework-agnostic arrays; PyG loader is a thin adapter (Phase 2).
 """
 import sys, time, pathlib
@@ -27,6 +27,9 @@ OPTION_EDGES = {
     "wet_route":    [("V02_CRACKING", "V04_PRESS")],
     "copra_buy":    [("SRC_COPRA_BUY", "BUF_COPRA")],
     "solar_train":  [("V02_CRACKING", "V03B_SOLAR"), ("V03B_SOLAR", "BUF_COPRA")],
+    "copra_sale":   [("BUF_COPRA", "SNK_COPRA_SALE")],
+    "shell_boiler": [("YARD_SHELL", "UTIL_STEAM")],
+    "nut_sale":     [("V01_RECEIVING", "SNK_NUT_SALE")],
 }
 SEED0 = 31415
 
@@ -80,14 +83,14 @@ def main():
     XV, XE, DG, Y = map(np.array, (XV, XE, DG, Y))
     ei = np.array([[nodes.index(u) for u, v in edges],
                    [nodes.index(v) for u, v in edges]])
-    np.savez_compressed("data/gat_dataset_v0.npz", X_V=XV, X_E=XE, dG=DG, y=Y,
+    np.savez_compressed("data/gat_dataset_v1.npz", X_V=XV, X_E=XE, dG=DG, y=Y,
                         edge_index=ei, nodes=np.array(nodes), 
                         edges=np.array([f"{u}->{v}" for u, v in edges]))
-    pd.DataFrame(idx).to_parquet("data/gat_dataset_v0_index.parquet", index=False)
+    pd.DataFrame(idx).to_parquet("data/gat_dataset_v1_index.parquet", index=False)
     print(f"{len(Y)} records in {time.perf_counter()-t0:.0f} s | "
           f"X_V {XV.shape} X_E {XE.shape} dG {DG.shape} | "
           f"y: mean {Y.mean():.4f} std {Y.std():.4f} | "
-          f"npz {pathlib.Path('data/gat_dataset_v0.npz').stat().st_size/1e6:.1f} MB")
+          f"npz {pathlib.Path('data/gat_dataset_v1.npz').stat().st_size/1e6:.1f} MB")
 
 
 if __name__ == "__main__":

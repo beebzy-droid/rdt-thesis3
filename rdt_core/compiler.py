@@ -30,6 +30,9 @@ MODELED_OPTION_EDGES = {
     ("SRC_COPRA_BUY", "BUF_COPRA"),
     ("V02_CRACKING", "V03B_SOLAR"),
     ("V03B_SOLAR", "BUF_COPRA"),
+    ("BUF_COPRA", "SNK_COPRA_SALE"),      # sell copra when press down
+    ("YARD_SHELL", "UTIL_STEAM"),          # excess shell -> boiler fuel (value reroute)
+    ("V01_RECEIVING", "SNK_NUT_SALE"),     # sell graded nuts when kernel path lost
 }
 
 
@@ -67,6 +70,9 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     has_buy = _active(G, "SRC_COPRA_BUY", "BUF_COPRA")
     has_solar = (_active(G, "V02_CRACKING", "V03B_SOLAR")
                  and _active(G, "V03B_SOLAR", "BUF_COPRA"))
+    has_csale = _active(G, "BUF_COPRA", "SNK_COPRA_SALE")
+    has_boiler = _active(G, "YARD_SHELL", "UTIL_STEAM")
+    has_nsale = _active(G, "V01_RECEIVING", "SNK_NUT_SALE")
     if _active(G, "V02_CRACKING", "V03B_SOLAR") != _active(G, "V03B_SOLAR", "BUF_COPRA"):
         raise ValueError("solar_train is a 2-edge OPTION_GROUP; partial activation "
                          "is structurally infeasible by design")
@@ -83,10 +89,13 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     h_dry = ca.SX.sym("h_dry"); h_press = ca.SX.sym("h_press"); h_ref = ca.SX.sym("h_ref")
 
     # ---- front end (V01/V02, material-attributed edges) ----
-    F_kernel = p.f_kernel * F_nuts
-    F_shell = p.f_shell * F_nuts
-    F_husk = p.f_husk * F_nuts
-    F_ccw_in = p.f_water * F_nuts
+    # nut-sale ΔG: divert the dryer-loss share of whole nuts BEFORE cracking [v0 approx]
+    F_nut_sale = (1 - h_dry) * F_nuts if has_nsale else ca.SX(0)
+    F_nuts_proc = F_nuts - F_nut_sale
+    F_kernel = p.f_kernel * F_nuts_proc
+    F_shell = p.f_shell * F_nuts_proc
+    F_husk = p.f_husk * F_nuts_proc
+    F_ccw_in = p.f_water * F_nuts_proc
 
     x_in_wb_eff = p.x_in_wb + dx_wb
     x_in = x_in_wb_eff / (1 - x_in_wb_eff)
@@ -132,6 +141,7 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     # ---- press / refining / bypass (identical port of legacy relations) ----
     F_press = ca.fmin(h_press * gate_tank * I[0] / p.tau_buf,
                       h_press * gate_tank * p.cap_press)
+    F_csale = ((1 - h_press) * gate_tank * I[0] / p.tau_buf) if has_csale else ca.SX(0)
     F_meal = F_press - F_oil
     oil_wet = p.y_wet * y_mult * F_wet
     cake_wet = F_wet - oil_wet
@@ -143,15 +153,22 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     F_carb = p.cap_carb * I[2] / (I[2] + p.K_sat)
     F_char = p.y_char * F_carb
     F_offgas = F_carb - F_char
+    # fmax fix 2026-07-03: instantaneous net went NEGATIVE under deep supply
+    # cuts (carbonizer draws yard inventory while arisings collapse) — sale/fuel
+    # flow cannot be negative; deficit is yard drawdown, already in dI[2]
+    F_shell_x = ca.fmax(0, F_shell - F_carb)
+    F_boiler = F_shell_x if has_boiler else ca.SX(0)
+    F_ssale = F_shell_x - F_boiler
     F_evap_feed = ca.fmin(I[3] / p.tau_surge, p.cap_evap)
     F_evap_water = F_evap_feed - F_conc
 
-    dI = ca.vertcat(F_copra + F_buy - F_press,
+    dI = ca.vertcat(F_copra + F_buy - F_press - F_csale,
                     F_oil + oil_wet - F_refine - F_crude_sale,
                     F_shell - F_carb,
                     F_ccw_in - F_evap_feed)
     F_sinks = (F_husk + F_meal + F_vco + F_ref_loss + F_char + F_offgas
-               + F_conc + F_evap_water + F_crude_sale + F_spoil + cake_wet)
+               + F_conc + F_evap_water + F_crude_sale + F_spoil + cake_wet
+               + F_csale + F_nut_sale)
 
     ode_parts = [dxs_A] + ([dxs_B] if has_solar else []) + \
                 [dI, F_ev_A + F_ev_B, F_sinks]
@@ -164,10 +181,12 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     dae = {"x": x, "z": z, "p": par, "ode": ca.vertcat(*ode_parts), "alg": alg}
 
     P_prod = (F_vco + F_meal + cake_wet + F_char + F_conc + F_crude_sale
-              + (F_shell - F_carb))
+              + F_shell_x + F_csale + F_nut_sale)
     V_php = (p.w_vco * F_vco + p.w_meal * (F_meal + cake_wet) + p.w_char * F_char
              + p.w_conc * F_conc + p.w_crude * F_crude_sale
-             + p.w_shell * (F_shell - F_carb) - p.w_copra_buy * F_buy)
+             + p.w_shell * F_ssale + p.w_fuel_offset * F_boiler
+             + p.w_copra_sale * F_csale + p.w_nut * F_nut_sale
+             - p.w_copra_buy * F_buy)
     out_fn = ca.Function("prod", [x, z, par], [P_prod, V_php])
 
     # ---- edge-flow instrumentation (physics carriers for GAT edge features) ----
@@ -186,7 +205,7 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
         ("V05_REFINING", "SNK_VCO"): F_vco,
         ("YARD_SHELL", "V06_CARBONIZER"): F_carb,
         ("V06_CARBONIZER", "SNK_CHAR"): F_char,
-        ("YARD_SHELL", "SNK_SHELL_SALE"): F_shell - F_carb,
+        ("YARD_SHELL", "SNK_SHELL_SALE"): F_ssale,
         ("SURGE_COCOWATER", "V07_EVAPORATOR"): F_evap_feed,
         ("V07_EVAPORATOR", "SNK_CONC"): F_conc,
     }
@@ -199,6 +218,12 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     if has_solar:
         edge_flows[("V02_CRACKING", "V03B_SOLAR")] = F_kd_B
         edge_flows[("V03B_SOLAR", "BUF_COPRA")] = F_copra_B
+    if has_csale:
+        edge_flows[("BUF_COPRA", "SNK_COPRA_SALE")] = F_csale
+    if has_boiler:
+        edge_flows[("YARD_SHELL", "UTIL_STEAM")] = F_boiler
+    if has_nsale:
+        edge_flows[("V01_RECEIVING", "SNK_NUT_SALE")] = F_nut_sale
     fe = sorted(edge_flows)
     flow_fn = ca.Function("flows", [x, z, par],
                           [ca.vertcat(*[edge_flows[e] for e in fe])])

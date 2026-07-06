@@ -12,9 +12,9 @@ from scipy.stats import spearmanr
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.metrics import r2_score, mean_absolute_error
 
-d = np.load('data/gat_dataset_v0.npz', allow_pickle=True)
+d = np.load('data/gat_dataset_v1.npz', allow_pickle=True)
 XV, XE, DG, y, ei = d['X_V'], d['X_E'], d['dG'], d['y'], d['edge_index']
-idx = pd.read_parquet('data/gat_dataset_v0_index.parquet')
+idx = pd.read_parquet('data/gat_dataset_v1_index.parquet')
 opt = sys.argv[1]; mode = sys.argv[2] if len(sys.argv) > 2 else "gbt"
 tr = np.where(idx.option != opt)[0]; te = np.where(idx.option == opt)[0]
 

@@ -59,6 +59,9 @@ class PlantParams:
     w_conc: float = 100.0
     w_shell: float = 8.0
     w_copra_buy: float = 40.0       # purchased copra COST, PHP/kg [est.; verify PCA copra price]
+    w_copra_sale: float = 38.0      # copra SALE price, PHP/kg [est.; buy-sale spread 2]
+    w_fuel_offset: float = 12.0     # shell-as-boiler-fuel value, PHP/kg [est.; vs sale 8]
+    w_nut: float = 9.0              # whole graded nut sale, PHP/kg [est.; ~farmgate]
     y_wet: float = 0.30             # wet-kernel press oil yield [est.; vs 0.63 dry route]
     # --- capacity/storage constraints (exposed by paired demo 2026-07-03:
     #     unbounded tank + uncapped drawdown made static arm unphysically strong) ---
@@ -163,9 +166,10 @@ def build_plant_dae(p: PlantParams):
     #   (Eq. 2.16 margin-weighted option — MANDATORY per finding #3, 2026-07-03)
     P_prod = (F_vco + F_meal + cake_wet + F_char + F_conc + F_crude_sale
               + (F_shell - F_carb))
+    F_shell_x = ca.fmax(0, F_shell - F_carb)         # fmax fix (see compiler.py)
     V_php = (p.w_vco * F_vco + p.w_meal * (F_meal + cake_wet) + p.w_char * F_char
              + p.w_conc * F_conc + p.w_crude * F_crude_sale
-             + p.w_shell * (F_shell - F_carb) - p.w_copra_buy * F_buy)
+             + p.w_shell * F_shell_x - p.w_copra_buy * F_buy)
     out_fn = ca.Function("prod", [x, z, par], [P_prod, V_php])
     return dae, out_fn
 

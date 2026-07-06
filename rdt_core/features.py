@@ -15,20 +15,38 @@ Node feature schema (d_v = 12), per-channel:
   9 is_candidate_node
   10 reserved (startup state — batch units, Phase 1)
   11 reserved (time-since-reconfig)
-Edge feature schema (d_e = 8):
+Edge feature schema v1 (d_e = 8) — SCHEMA CHANGE 2026-07-03, Finding #15 action:
   0 flow_norm       modeled flow / FLOW_SCALE (0 if unmodeled)
   1 active          topology indicator A(t)
   2 candidate       reconfigurable edge flag
   3 is_utility      stream type
-  4 reserved (T)  5 reserved (P)  6 reserved (capacity_util)  7 reserved (diameter)
-Reserved channels are declared now so the schema is frozen before any training —
-silent schema drift between dataset versions is a leakage/comparability hazard.
+  4 route_cap_norm  route capacity / FLOW_SCALE          [TRANSFERABLE PHYSICS]
+  5 route_val_norm  net route value density / w_vco      [TRANSFERABLE PHYSICS]
+  6 src_is_source   edge originates at a supply node     [alt-supply semantics]
+  7 dst_is_sink     edge terminates at a sink            [divert/sale semantics]
+Channels 4–7 describe WHAT an edge does, not WHICH edge it is — the Finding-#15
+requirement for ΔG-generalization. v0 datasets (zeros in 4–7) are superseded.
 """
+
+
 from __future__ import annotations
 import numpy as np
 import networkx as nx
 
 from . import icpc_graph as icpc
+
+# per-candidate-edge physics [est.; value density = net PHP/kg of material moved
+# via this route to its end use — verify against Phase 5 price data]
+EDGE_PHYS = {   # (u,v): (capacity kg/hr, value density PHP/kg)
+    ("TANK_CRUDE_VCO", "SNK_VCO_CRUDE"): (12_000.0, 140.0),
+    ("V02_CRACKING", "V04_PRESS"):       (3_800.0, 0.30 * 200 + 0.70 * 22),
+    ("SRC_COPRA_BUY", "BUF_COPRA"):      (3_333.0, 0.63 * 200 * 0.97 + 0.37 * 22 - 40),
+    ("V02_CRACKING", "V03B_SOLAR"):      (2_050.0, 0.63 * 200 * 0.97 + 0.37 * 22),
+    ("V03B_SOLAR", "BUF_COPRA"):         (2_050.0, 0.63 * 200 * 0.97 + 0.37 * 22),
+    ("BUF_COPRA", "SNK_COPRA_SALE"):     (20_000.0, 38.0),
+    ("YARD_SHELL", "UTIL_STEAM"):        (2_000.0, 12.0),
+    ("V01_RECEIVING", "SNK_NUT_SALE"):   (15_000.0, 9.0),
+}
 
 INV_SCALE = 100_000.0     # kg
 FLOW_SCALE = 15_000.0     # kg/hr (≈ nominal nut feed)
@@ -73,6 +91,11 @@ def edge_features(G_active: nx.DiGraph, edges, flows: dict):
                         and G_active.edges[u, v].get("active", False))
         X[j, 2] = float(bool(a.get("candidate")))
         X[j, 3] = float(a.get("stream") == "utility")
+        cap, val = EDGE_PHYS.get((u, v), (0.0, 0.0))
+        X[j, 4] = cap / FLOW_SCALE
+        X[j, 5] = val / 200.0
+        X[j, 6] = float(Gm.nodes[u]["kind"] == "source")
+        X[j, 7] = float(Gm.nodes[v]["kind"] == "sink")
     return X
 
 

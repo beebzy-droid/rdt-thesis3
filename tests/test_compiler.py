@@ -178,7 +178,7 @@ class TestGATPrototype:
         import numpy as np
         from sklearn.metrics import r2_score
         from rdt_core import gat_jax as gj
-        d = np.load("data/gat_dataset_v0.npz", allow_pickle=True)
+        d = np.load("data/gat_dataset_v1.npz", allow_pickle=True)
         rng = np.random.default_rng(1)
         sub = rng.choice(len(d["y"]), 16, replace=False)
         pred = gj.train(d["X_V"][sub], d["X_E"][sub], d["dG"][sub], d["y"][sub],
