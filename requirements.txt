@@ -7,3 +7,6 @@ scipy>=1.11
 pandas>=2.0
 pyarrow>=14.0
 scikit-learn>=1.3
+# prototype-only (container GAT); production DL stack is PyTorch Geometric on reference hardware
+jax>=0.4
+optax>=0.2

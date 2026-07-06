@@ -167,3 +167,22 @@ class TestFeaturesAndDataset:
         v = ft.delta_multihot(edges, [("V02_CRACKING", "V03B_SOLAR"),
                                       ("V03B_SOLAR", "BUF_COPRA")])
         assert v.sum() == 2.0 and v.shape == (50,)
+
+
+class TestGATPrototype:
+    def test_forward_and_memorization(self):
+        """Implementation gate: batched forward shapes + 16-record memorization.
+        jax is a PROTOTYPE-ONLY dependency (PyG is production, Table 6.1) —
+        skipped cleanly where absent."""
+        jax = pytest.importorskip("jax")
+        import numpy as np
+        from sklearn.metrics import r2_score
+        from rdt_core import gat_jax as gj
+        d = np.load("data/gat_dataset_v0.npz", allow_pickle=True)
+        rng = np.random.default_rng(1)
+        sub = rng.choice(len(d["y"]), 16, replace=False)
+        pred = gj.train(d["X_V"][sub], d["X_E"][sub], d["dG"][sub], d["y"][sub],
+                        d["edge_index"], tr=np.arange(16), te=np.arange(16),
+                        seed=0, epochs=300)
+        assert pred.shape == (16,)
+        assert r2_score(d["y"][sub], pred) > 0.8
