@@ -186,3 +186,34 @@ class TestGATPrototype:
                         seed=0, epochs=300)
         assert pred.shape == (16,)
         assert r2_score(d["y"][sub], pred) > 0.8
+
+
+class TestMILPAndLoop:
+    def test_milp_select_exclusions_and_nmax(self):
+        from rdt_core.milp import select, exclusion_pairs
+        assert ("wet_route", "copra_buy") in exclusion_pairs() \
+            or ("copra_buy", "wet_route") in exclusion_pairs()
+        y = dict(wet_route=0.10, copra_buy=0.09, crude_bypass=0.05,
+                 solar_train=0.04, nut_sale=0.03)
+        sel = select(y, n_max=3)
+        assert len(sel) <= 3
+        assert not ({"wet_route", "copra_buy"} <= set(sel))   # exclusion honored
+        assert "wet_route" in sel                              # higher value kept
+        assert select({}, n_max=3) == []
+
+    def test_closed_loop_smoke(self):
+        """One paired scenario through the full recurrent loop (CI-scale)."""
+        import numpy as np
+        from rdt_core.plant_dae import PlantParams, wb2db
+        from rdt_core.disruptions import sample
+        from rdt_core.loop import TopologyCache, run_closed_loop
+        p = PlantParams(); F0 = p.nominal_nut_feed()
+        cache = TopologyCache(p)
+        x0 = np.concatenate([np.full(5, wb2db(p.x_in_wb)),
+                             [F0 * .3 * 8 * .8, 2000, 3000, 1000], [0, 0]])
+        dp = [d for d in sample("D3", 3, 27182) if d.unit == "dry"][0]
+        screen = lambda Xv, Xe, dG: np.array([0, 0.05, 0, 0.05, 0, 0, 0])  # wet+solar
+        Rs, sw_s, _ = run_closed_loop(dp, None, cache, F0, x0, static=True, days=10)
+        Rr, sw_r, _ = run_closed_loop(dp, screen, cache, F0, x0, days=10)
+        assert sw_s == 0 and sw_r >= 1
+        assert Rr > Rs                                         # rescue realized
