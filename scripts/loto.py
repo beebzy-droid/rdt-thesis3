@@ -38,4 +38,4 @@ if mode == "gbt":
            .fit(Xb[tr], y[tr]).predict(Xb[te]))
 else:
     from rdt_core import gat_jax as gj
-    report("GAT", gj.train(XV, XE, DG, y, ei, tr, te, seed=0, epochs=400, lr=3e-3))
+    report("GAT", gj.train(XV, XE, DG, y, ei, tr, te, seed=0, epochs=250, lr=4.5e-3))
