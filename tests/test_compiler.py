@@ -213,7 +213,7 @@ class TestMILPAndLoop:
                              [F0 * .3 * 8 * .8, 2000, 3000, 1000], [0, 0]])
         dp = [d for d in sample("D3", 3, 27182) if d.unit == "dry"][0]
         screen = lambda Xv, Xe, dG: np.array([0, 0.05, 0, 0.05, 0, 0, 0])  # wet+solar
-        Rs, sw_s, _ = run_closed_loop(dp, None, cache, F0, x0, static=True, days=10)
-        Rr, sw_r, _ = run_closed_loop(dp, screen, cache, F0, x0, days=10)
+        Rs, _, sw_s, _ = run_closed_loop(dp, None, cache, F0, x0, static=True, days=10)
+        Rr, _, sw_r, _ = run_closed_loop(dp, screen, cache, F0, x0, days=10)
         assert sw_s == 0 and sw_r >= 1
         assert Rr > Rs                                         # rescue realized

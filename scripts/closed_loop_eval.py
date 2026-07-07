@@ -12,7 +12,7 @@ import pandas as pd
 
 from rdt_core.plant_dae import PlantParams, wb2db
 from rdt_core.disruptions import sample
-from rdt_core.loop import TopologyCache, run_closed_loop
+from rdt_core.loop import TopologyCache, run_closed_loop, strong_params
 from rdt_core import features as ft
 
 SEED_EVAL, N_EVAL = 27182, 40
@@ -40,24 +40,25 @@ def get_screen():
 
 
 def main(cat):
-    p = PlantParams(); F0 = p.nominal_nut_feed()
-    cache = TopologyCache(p)
+    ps = strong_params(); F0 = ps.nominal_nut_feed()
+    cache = TopologyCache(ps)                       # STRONG policy, both arms
     screen = get_screen()
-    x0 = np.concatenate([np.full(5, wb2db(p.x_in_wb)),
-                         [F0 * 0.30 * p.tau_buf * 0.8, 2000.0, 3000.0, 1000.0], [0, 0]])
+    x0 = np.concatenate([np.full(5, wb2db(ps.x_in_wb)),
+                         [F0 * 0.30 * ps.tau_buf * 0.8, 2000.0, 3000.0, 1000.0], [0, 0]])
     rows, t0 = [], time.perf_counter()
     dps = sample(cat, N_EVAL, SEED_EVAL)
     if SLICE:
         a, b = map(int, SLICE.split(":")); dps = dps[a:b]
     for dp in dps:
-        R_s, _, _ = run_closed_loop(dp, None, cache, F0, x0, static=True)
-        R_r, sw, log = run_closed_loop(dp, screen, cache, F0, x0)
+        R_s, T_s, _, _ = run_closed_loop(dp, None, cache, F0, x0, static=True)
+        R_r, T_r, sw, log = run_closed_loop(dp, screen, cache, F0, x0)
         rows.append(dict(category=cat, seed=dp.seed, unit=dp.unit,
                          severity=dp.severity, duration_hr=dp.duration_hr,
-                         R_static=R_s, R_rdt=R_r, dR=R_r - R_s, n_switches=sw,
+                         R_static=R_s, R_rdt=R_r, dR=R_r - R_s,
+                         TTR_static=T_s, TTR_rdt=T_r, n_switches=sw,
                          data_class="SYNTHETIC/physics-forward-model"))
     df = pd.DataFrame(rows)
-    out = pathlib.Path("data/closed_loop_v1.parquet")
+    out = pathlib.Path("data/closed_loop_v2_strong.parquet")
     if out.exists():
         df = pd.concat([pd.read_parquet(out), df], ignore_index=True)
     df.to_parquet(out, index=False)

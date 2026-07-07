@@ -45,6 +45,7 @@ class CompiledPlant:
     active_options: set
     flow_edges: list = None      # [(u,v), ...] edges with modeled flows
     flow_fn: ca.Function = None  # (x, z, p) -> flow per flow_edges [kg/hr]
+    z_fn: ca.Function = None     # (x, p) -> exact algebraic solution
 
 
 def _active(G, u, v) -> bool:
@@ -227,6 +228,14 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     fe = sorted(edge_flows)
     flow_fn = ca.Function("flows", [x, z, par],
                           [ca.vertcat(*[edge_flows[e] for e in fe])])
+    # exact algebraic solution: the alg system is explicit-in-z by construction,
+    # so consistent initialization uses the closed-form expressions directly
+    # (fix 2026-07-03: IDACalcIC linesearch failures at parameter discontinuities
+    #  with state on the gate manifold; §5.1.2 consistent-init contract).
+    # NOTE: z − alg does NOT symbolically cancel in CasADi SX — explicit form required.
+    z_fn = ca.Function("z_exact", [x, par],
+                       [ca.vertcat(p.y_oil * y_mult * F_press,
+                                   F_evap_feed * p.brix_in / p.brix_out)])
 
     names = [f"x_dryA_{i}" for i in range(n_c)]
     if has_solar:
@@ -236,7 +245,7 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
                          param_names=["F_nuts", "y_mult", "dx_wb",
                                       "h_dry", "h_press", "h_ref"],
                          active_options=active_opts,
-                         flow_edges=fe, flow_fn=flow_fn)
+                         flow_edges=fe, flow_fn=flow_fn, z_fn=z_fn)
 
 
 def apply_change(G: nx.DiGraph, edges: list[tuple], activate: bool = True):
