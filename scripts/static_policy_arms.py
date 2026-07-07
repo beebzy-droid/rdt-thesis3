@@ -62,7 +62,22 @@ def run_scheduled(arms, dp, F0, x0, schedule):
     tg = np.arange(1, n + 1) * DT
     pre = (tg > dp.onset_hr - 24) & (tg <= dp.onset_hr)
     win = (tg > dp.onset_hr) & (tg <= dp.onset_hr + R_WIN)
-    return float(np.mean(V[win] / V[pre].mean()))
+    V0 = V[pre].mean()
+    R = float(np.mean(V[win] / V0))
+    # TTR80, corrected semantics (Amendment A1, 2026-07-03)
+    ratio = V / V0
+    post = np.where(tg > dp.onset_hr)[0]
+    k6 = int(6 / DT)
+    below = post[ratio[post] < 0.8]
+    if below.size == 0:
+        ttr = 0.0
+    else:
+        ttr = np.nan
+        for j in post[post >= below[0]]:
+            if j + k6 <= n and np.all(ratio[j:j + k6] >= 0.8):
+                ttr = tg[j] - dp.onset_hr
+                break
+    return R, ttr
 
 
 def main(cat):
@@ -79,12 +94,13 @@ def main(cat):
         a, b = map(int, sl.split(":")); dps = dps[a:b]
     rows, t0 = [], time.perf_counter()
     for dp in dps:
-        R_hd = run_scheduled(arms, dp, F0, x0,
-                             [(0.0, "slow"), (dp.onset_hr, "fast")])
-        R_dh = run_scheduled(arms, dp, F0, x0,
-                             [(0.0, "fast"), (dp.onset_hr, "slow")])
+        R_hd, T_hd = run_scheduled(arms, dp, F0, x0,
+                                   [(0.0, "slow"), (dp.onset_hr, "fast")])
+        R_dh, _ = run_scheduled(arms, dp, F0, x0,
+                                [(0.0, "fast"), (dp.onset_hr, "slow")])
         rows.append(dict(category=cat, seed=dp.seed,
-                         R_hoard_deploy=R_hd, R_deploy_hoard=R_dh,
+                         R_hoard_deploy=R_hd, TTR_hoard_deploy=T_hd,
+                         R_deploy_hoard=R_dh,
                          data_class="SYNTHETIC/physics-forward-model"))
     df = pd.DataFrame(rows)
     out = pathlib.Path("data/static_policy_arms.parquet")

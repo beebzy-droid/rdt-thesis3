@@ -137,7 +137,8 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
 
     # ---- purchased copra (deficit-following) ----
     F_copra_nom = 80_000.0 / 24
-    F_buy = ca.fmax(0, F_copra_nom - F_copra) if has_buy else ca.SX(0)
+    F_buy = (ca.fmin(ca.fmax(0, F_copra_nom - F_copra),
+                     p.buy_cap_frac * F_copra_nom) if has_buy else ca.SX(0))
 
     # ---- press / refining / bypass (identical port of legacy relations) ----
     F_press = ca.fmin(h_press * gate_tank * I[0] / p.tau_buf,

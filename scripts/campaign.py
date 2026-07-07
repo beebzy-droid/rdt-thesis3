@@ -26,6 +26,7 @@ OUT = pathlib.Path("data/campaign")
 def run_shard(args):
     cat, lo, hi = args
     out = OUT / f"{cat}_{lo:04d}_{hi:04d}.parquet"
+    OUT.mkdir(parents=True, exist_ok=True)
     if out.exists():
         return f"{cat}[{lo}:{hi}] skip (exists)"
     # heavy imports inside worker (fork-safe, keeps parent light)
@@ -46,6 +47,11 @@ def run_shard(args):
     db = importlib.util.module_from_spec(spec3); spec3.loader.exec_module(db)
 
     p_slow, p_fast = PlantParams(), strong_params()
+    if os.environ.get("RDT_BUY_CAP"):
+        import dataclasses
+        cap = float(os.environ["RDT_BUY_CAP"])
+        p_slow = dataclasses.replace(p_slow, buy_cap_frac=cap)
+        p_fast = dataclasses.replace(p_fast, buy_cap_frac=cap)
     F0 = p_slow.nominal_nut_feed()
     arms = {"slow": sp.build_arm(p_slow), "fast": sp.build_arm(p_fast)}
     cache_fast, cache_slow = TopologyCache(p_fast), TopologyCache(p_slow)
@@ -63,7 +69,7 @@ def run_shard(args):
                 if onset_i <= a <= onset_i + 96]
         delay = (hits[0] - onset_i) * 0.5 if hits else np.nan
         t_det = dp.onset_hr + (delay if np.isfinite(delay) else 1e9)
-        R_st = sp.run_scheduled(arms, dp, F0, x0, [(0.0, "slow"), (dp.onset_hr, "fast")])
+        R_st, T_st = sp.run_scheduled(arms, dp, F0, x0, [(0.0, "slow"), (dp.onset_hr, "fast")])
         R_r, T_r, sw, info = run_closed_loop(
             dp, screen, cache_fast, F0, x0,
             cache_slow=cache_slow, t_regime=t_det, t_enable=t_det)
@@ -71,7 +77,7 @@ def run_shard(args):
                          severity=dp.severity, duration_hr=dp.duration_hr,
                          onset_hr=dp.onset_hr, det_delay=delay,
                          R_static=R_st, R_rdt=R_r, dR=R_r - R_st,
-                         TTR_rdt=T_r, n_switches=sw,
+                         TTR_static=T_st, TTR_rdt=T_r, n_switches=sw,
                          degraded=sum(info["degraded"]),
                          data_class="SYNTHETIC/physics-forward-model"))
     OUT.mkdir(parents=True, exist_ok=True)
@@ -84,7 +90,14 @@ def main():
     ap.add_argument("--cats", default="D1,D3,D4,D8")
     ap.add_argument("--n", type=int, default=500)
     ap.add_argument("--workers", type=int, default=os.cpu_count())
+    ap.add_argument("--buy-cap", type=float, default=None,
+                    help="market-availability cap on purchased copra, fraction of "
+                         "nominal (e.g. 0.3). Output -> data/campaign_cap{v}/")
     a = ap.parse_args()
+    if a.buy_cap is not None:
+        os.environ["RDT_BUY_CAP"] = str(a.buy_cap)
+        global OUT
+        OUT = pathlib.Path(f"data/campaign_cap{a.buy_cap}")
     jobs = [(c, lo, min(lo + SHARD, a.n))
             for c in a.cats.split(",") for lo in range(0, a.n, SHARD)]
     print(f"{len(jobs)} shards x <= {SHARD} scenarios, {a.workers} workers")

@@ -62,6 +62,10 @@ class PlantParams:
     w_copra_sale: float = 38.0      # copra SALE price, PHP/kg [est.; buy-sale spread 2]
     w_fuel_offset: float = 12.0     # shell-as-boiler-fuel value, PHP/kg [est.; vs sale 8]
     w_nut: float = 9.0              # whole graded nut sale, PHP/kg [est.; ~farmgate]
+    buy_cap_frac: float = 1e9       # purchased-copra market availability cap, as
+                                    # fraction of nominal copra rate [est.; 1e9 =
+                                    # uncapped legacy behavior. Finding #25: regional
+                                    # disruptions constrain the copra market too]
     y_wet: float = 0.30             # wet-kernel press oil yield [est.; vs 0.63 dry route]
     # --- capacity/storage constraints (exposed by paired demo 2026-07-03:
     #     unbounded tank + uncapped drawdown made static arm unphysically strong) ---
