@@ -24,9 +24,16 @@ OUT = pathlib.Path("data/campaign")
 
 
 def run_shard(args):
-    cat, lo, hi = args
-    out = OUT / f"{cat}_{lo:04d}_{hi:04d}.parquet"
-    OUT.mkdir(parents=True, exist_ok=True)
+    """SPAWN-SAFETY (fix 2026-07-04): Windows multiprocessing spawns workers that
+    re-import this module — parent-process global mutation and env tricks do NOT
+    reach them. Everything a worker needs travels in the job tuple; the output
+    directory is derived HERE. Bug caught in production: --buy-cap workers wrote/
+    checked the UNCAPPED directory (data protected only by the skip guard)."""
+    cat, lo, hi, buy_cap = args
+    out_dir = (pathlib.Path(f"data/campaign_cap{buy_cap}") if buy_cap
+               else pathlib.Path("data/campaign"))
+    out = out_dir / f"{cat}_{lo:04d}_{hi:04d}.parquet"
+    out_dir.mkdir(parents=True, exist_ok=True)
     if out.exists():
         return f"{cat}[{lo}:{hi}] skip (exists)"
     # heavy imports inside worker (fork-safe, keeps parent light)
@@ -47,11 +54,10 @@ def run_shard(args):
     db = importlib.util.module_from_spec(spec3); spec3.loader.exec_module(db)
 
     p_slow, p_fast = PlantParams(), strong_params()
-    if os.environ.get("RDT_BUY_CAP"):
+    if buy_cap:
         import dataclasses
-        cap = float(os.environ["RDT_BUY_CAP"])
-        p_slow = dataclasses.replace(p_slow, buy_cap_frac=cap)
-        p_fast = dataclasses.replace(p_fast, buy_cap_frac=cap)
+        p_slow = dataclasses.replace(p_slow, buy_cap_frac=buy_cap)
+        p_fast = dataclasses.replace(p_fast, buy_cap_frac=buy_cap)
     F0 = p_slow.nominal_nut_feed()
     arms = {"slow": sp.build_arm(p_slow), "fast": sp.build_arm(p_fast)}
     cache_fast, cache_slow = TopologyCache(p_fast), TopologyCache(p_slow)
@@ -80,7 +86,6 @@ def run_shard(args):
                          TTR_static=T_st, TTR_rdt=T_r, n_switches=sw,
                          degraded=sum(info["degraded"]),
                          data_class="SYNTHETIC/physics-forward-model"))
-    OUT.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).to_parquet(out, index=False)
     return f"{cat}[{lo}:{hi}] done {time.perf_counter()-t0:.0f}s"
 
@@ -94,19 +99,18 @@ def main():
                     help="market-availability cap on purchased copra, fraction of "
                          "nominal (e.g. 0.3). Output -> data/campaign_cap{v}/")
     a = ap.parse_args()
-    if a.buy_cap is not None:
-        os.environ["RDT_BUY_CAP"] = str(a.buy_cap)
-        global OUT
-        OUT = pathlib.Path(f"data/campaign_cap{a.buy_cap}")
-    jobs = [(c, lo, min(lo + SHARD, a.n))
+    jobs = [(c, lo, min(lo + SHARD, a.n), a.buy_cap)
             for c in a.cats.split(",") for lo in range(0, a.n, SHARD)]
     print(f"{len(jobs)} shards x <= {SHARD} scenarios, {a.workers} workers")
     if a.workers == 1:
         for j in jobs:
             print(run_shard(j))
     else:
-        from multiprocessing import Pool
-        with Pool(a.workers) as pool:
+        # spawn on ALL platforms: matches Windows semantics, so container CI
+        # exercises the same worker-isolation the production machine has
+        # (fix 2026-07-04, after the fork/spawn OUT-directory bug)
+        from multiprocessing import get_context
+        with get_context("spawn").Pool(a.workers) as pool:
             for msg in pool.imap_unordered(run_shard, jobs):
                 print(msg, flush=True)
 
