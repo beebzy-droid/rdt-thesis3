@@ -54,7 +54,8 @@ class TopologyCache:
 def run_closed_loop(dp, screen, cache: TopologyCache, F0, x_init,
                     days=30.0, cycle_hr=1.0, static=False, r_win=72.0,
                     y_on=0.02, y_off=0.005, dwell_hr=6.0,
-                    cache_slow: "TopologyCache" = None, t_regime: float = None):
+                    cache_slow: "TopologyCache" = None, t_regime: float = None,
+                    t_enable: float = 0.0):
     """cache_slow + t_regime: hoard->deploy continuous schedule — integrate on
     cache_slow (passive draws) until t_regime, then on `cache` (fast draws).
     Same-topology state vectors are identical across param sets -> no remap.
@@ -86,6 +87,7 @@ def run_closed_loop(dp, screen, cache: TopologyCache, F0, x_init,
             cur = cache
             cpn, intg, _ = cur.get(active)          # identical states, no remap
         if (not static) and i % k_cycle == 0 and i > 0 \
+                and i * DT >= t_enable \
                 and (i * DT - last_switch_t) >= dwell_hr:
             Xv, Xe = ft.extract(cpn, cache.get(active)[2], xk, zk, par,
                                 cache.nodes, cache.edges)

@@ -20,7 +20,9 @@ spec = importlib.util.spec_from_file_location(
     "ce", pathlib.Path(__file__).parent / "closed_loop_eval.py")
 ce = importlib.util.module_from_spec(spec); spec.loader.exec_module(ce)
 
-SEED_EVAL, N_EVAL, DETECT = 27182, 40, 1.0
+SEED_EVAL, N_EVAL = 27182, 40
+DET = (pd.read_parquet("data/detection_bench.parquet")
+       .query("threshold == 0.85").set_index(["category", "seed"]).delay_hr)
 
 
 def main(cat):
@@ -38,15 +40,17 @@ def main(cat):
         a, b = map(int, sl.split(":")); dps = dps[a:b]
     rows, t0 = [], time.perf_counter()
     for dp in dps:
+        delay = float(DET.get((cat, dp.seed), np.nan))
+        t_det = dp.onset_hr + (delay if np.isfinite(delay) else 1e9)
         R, T, sw, info = run_closed_loop(
             dp, screen, cache_fast, F0, x0,
-            cache_slow=cache_slow, t_regime=dp.onset_hr + DETECT)
-        rows.append(dict(category=cat, seed=dp.seed, R_rdt_sched=R,
+            cache_slow=cache_slow, t_regime=t_det, t_enable=t_det)
+        rows.append(dict(category=cat, seed=dp.seed, R_rdt_sched=R, det_delay=delay,
                          TTR_rdt_sched=T, n_switches=sw,
                          degraded=sum(info["degraded"]),
                          data_class="SYNTHETIC/physics-forward-model"))
     df = pd.DataFrame(rows)
-    out = pathlib.Path("data/rdt_scheduled.parquet")
+    out = pathlib.Path("data/rdt_detected.parquet")
     if out.exists():
         df = pd.concat([pd.read_parquet(out), df], ignore_index=True)
     df.to_parquet(out, index=False)

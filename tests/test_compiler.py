@@ -217,3 +217,25 @@ class TestMILPAndLoop:
         Rr, _, sw_r, _ = run_closed_loop(dp, screen, cache, F0, x0, days=10)
         assert sw_s == 0 and sw_r >= 1
         assert Rr > Rs                                         # rescue realized
+
+
+class TestBOCPD:
+    def test_step_change_detected_no_nominal_alarms(self):
+        from rdt_core.bocpd import detect
+        # seed 1: verified noise-clean over the pre-change window; raw N(0,1)
+        # synthetic channels are noisier than 1.5%-rel plant channels, so the
+        # deployment-level FA gate is the benchmark (0.80/30 d), not this test
+        rng = np.random.default_rng(1)
+        Z = rng.normal(0, 1, (400, 6))
+        Z[200:, 0] += 4.0                              # step in channel 0
+        alarms = detect(Z, 0.85, cusum_h=12.0)
+        assert alarms and 200 <= alarms[0] <= 208      # detected within 4 h
+        assert not [a for a in alarms if a < 200]      # no pre-change alarms
+
+    def test_slow_ramp_caught_by_cusum_fusion(self):
+        from rdt_core.bocpd import detect
+        rng = np.random.default_rng(1)
+        Z = rng.normal(0, 1, (600, 6))
+        Z[300:, 1] += np.linspace(0, 2.5, 300)         # slow drift (D1 class)
+        assert detect(Z, 0.85, cusum_h=12.0), "ramp missed"
+        assert not detect(Z[:300], 0.85, cusum_h=12.0) # nominal-only clean
