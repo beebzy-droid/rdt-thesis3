@@ -53,7 +53,12 @@ class TopologyCache:
 
 def run_closed_loop(dp, screen, cache: TopologyCache, F0, x_init,
                     days=30.0, cycle_hr=1.0, static=False, r_win=72.0,
-                    y_on=0.02, y_off=0.005, dwell_hr=6.0):
+                    y_on=0.02, y_off=0.005, dwell_hr=6.0,
+                    cache_slow: "TopologyCache" = None, t_regime: float = None):
+    """cache_slow + t_regime: hoard->deploy continuous schedule — integrate on
+    cache_slow (passive draws) until t_regime, then on `cache` (fast draws).
+    Same-topology state vectors are identical across param sets -> no remap.
+    §5.4.2 symmetry fix 2026-07-03: RDT must ride the winning continuous policy."""
     """Churn control (2026-07-03, exposed by first loop smoke: 17–63 switches/ep):
     hysteresis — activate at ŷ > y_on, retain while ŷ > y_off — plus a post-switch
     decision freeze of dwell_hr. Operational plausibility is a gated endpoint
@@ -64,7 +69,9 @@ def run_closed_loop(dp, screen, cache: TopologyCache, F0, x_init,
     n = int(days * 24 / DT)
     k_cycle = max(1, int(cycle_hr / DT))
     active: frozenset = frozenset()
-    cpn, intg, _ = cache.get(active)
+    use_slow = cache_slow is not None and t_regime is not None
+    cur = cache_slow if use_slow else cache
+    cpn, intg, _ = cur.get(active)
     xk, zk = x_init.copy(), np.zeros(2)
     V = np.empty(n)
     switches, log = 0, []
@@ -74,6 +81,10 @@ def run_closed_loop(dp, screen, cache: TopologyCache, F0, x_init,
                         for o in OPTIONS])
     for i in range(n):
         par = dae_params(dp, i * DT, F0)[:6]
+        if use_slow and i * DT >= t_regime:
+            use_slow = False
+            cur = cache
+            cpn, intg, _ = cur.get(active)          # identical states, no remap
         if (not static) and i % k_cycle == 0 and i > 0 \
                 and (i * DT - last_switch_t) >= dwell_hr:
             Xv, Xe = ft.extract(cpn, cache.get(active)[2], xk, zk, par,
@@ -84,7 +95,7 @@ def run_closed_loop(dp, screen, cache: TopologyCache, F0, x_init,
             chosen = frozenset(select(eligible, y_min=0.0)) | (active & STATEFUL)
             if chosen != active:
                 last_switch_t = i * DT
-                c_new, i_new, _ = cache.get(chosen)
+                c_new, i_new, _ = cur.get(chosen)
                 defaults = {f"x_dryB_{j}": wb2db(p.x_in_wb) for j in range(5)}
                 xk = warm_start_map(xk, cpn.state_names, c_new.state_names, defaults)
                 cpn, intg = c_new, i_new
