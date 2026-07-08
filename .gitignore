@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 data/campaign/
 data/campaign_a1/
+figures/

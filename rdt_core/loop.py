@@ -55,7 +55,7 @@ def run_closed_loop(dp, screen, cache: TopologyCache, F0, x_init,
                     days=30.0, cycle_hr=1.0, static=False, r_win=72.0,
                     y_on=0.02, y_off=0.005, dwell_hr=6.0,
                     cache_slow: "TopologyCache" = None, t_regime: float = None,
-                    t_enable: float = 0.0):
+                    t_enable: float = 0.0, return_traj: bool = False):
     """cache_slow + t_regime: hoard->deploy continuous schedule — integrate on
     cache_slow (passive draws) until t_regime, then on `cache` (fast draws).
     Same-topology state vectors are identical across param sets -> no remap.
@@ -139,7 +139,10 @@ def run_closed_loop(dp, screen, cache: TopologyCache, F0, x_init,
             if j + k6 <= n and np.all(ratio[j:j + k6] >= 0.8):
                 ttr80 = t[j] - dp.onset_hr
                 break
-    return R, ttr80, switches, {"log": log, "degraded": degraded}
+    info = {"log": log, "degraded": degraded}
+    if return_traj:
+        info["t"], info["V"], info["V0"] = t, V, V0
+    return R, ttr80, switches, info
 
 
 def strong_params(p: PlantParams | None = None) -> PlantParams:
