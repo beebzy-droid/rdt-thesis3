@@ -1,0 +1,141 @@
+# provenance.yaml — parameter provenance ledger (§9.2 integrity infrastructure)
+#
+# Every quantitative parameter that is [est.] or [verify] in the codebase, with:
+#   value        current planning value in code (single source of truth = the .py)
+#   unit         physical unit
+#   status       est | verify | derived  (derived = computed from other params)
+#   source       named primary source to check against, or "ASSUMPTION" if none
+#   e11_weight   qualitative influence on the E11 economic headline (hi/med/lo/none)
+#   note         short justification / relationship
+#
+# RULE (enforced by scripts/check_provenance.py): a parameter may move from
+# status:est/verify to status:verified ONLY by editing this file with a real
+# citation in `source` and setting `verified: true`. No manuscript number may
+# cite a parameter whose verified flag is false. The [verify] register in
+# verify_register.md is the human-facing worklist derived from this file.
+
+meta:
+  created: 2026-07-04
+  rule: "no unverified parameter enters a manuscript claim (lifecycle 9.2)"
+  data_class: SYNTHETIC/physics-forward-model
+
+parameters:
+
+  # ---------------- product prices (enter every ΔR via value-weighted P(τ)) ----
+  w_vco:
+    value: 200.0; unit: PHP/kg; status: verify; verified: false
+    source: "PCA / DA-Bantay Presyo VCO farmgate-to-mill price monitor"
+    e11_weight: hi
+    note: "highest product weight; dominates value basis with concentrate"
+  w_crude:
+    value: 140.0; unit: PHP/kg; status: verify; verified: false
+    source: "PCA crude coconut oil (CNO) price series"
+    e11_weight: hi
+    note: "crude_bypass option value; ~0.70×w_vco assumption"
+  w_meal:
+    value: 22.0; unit: PHP/kg; status: verify; verified: false
+    source: "copra meal / animal feed wholesale (PSA / feed millers)"
+    e11_weight: med
+  w_char:
+    value: 32.0; unit: PHP/kg; status: verify; verified: false
+    source: "charcoal / activated-carbon precursor price"
+    e11_weight: lo
+  w_conc:
+    value: 100.0; unit: PHP/kg; status: verify; verified: false
+    source: "coconut water concentrate (65 Brix) export/domestic price"
+    e11_weight: med
+  w_shell:
+    value: 8.0; unit: PHP/kg; status: verify; verified: false
+    source: "raw coconut shell / biomass fuel price"
+    e11_weight: lo
+  w_copra_buy:
+    value: 40.0; unit: PHP/kg; status: verify; verified: false
+    source: "PCA copra farmgate price monitor"
+    e11_weight: hi
+    note: "copra_buy is the dominant D1/D8 rescue value; also sets φ economics"
+  w_copra_sale:
+    value: 38.0; unit: PHP/kg; status: est; verified: false
+    source: "ASSUMPTION: w_copra_buy minus 2 PHP/kg handling spread"
+    e11_weight: med
+  w_fuel_offset:
+    value: 12.0; unit: PHP/kg; status: est; verified: false
+    source: "ASSUMPTION: shell fuel value vs 8 PHP/kg sale"
+    e11_weight: lo
+  w_nut:
+    value: 9.0; unit: PHP/kg; status: verify; verified: false
+    source: "whole-nut farmgate price (PSA regional)"
+    e11_weight: lo
+
+  # ---------------- episode frequencies (multiply ΔR→annual in E11) -----------
+  freq_D1:
+    value: 2.0; unit: episodes/yr; status: verify; verified: false
+    source: "PAGASA tropical-cyclone climatology, supply-disrupting landfalls in
+             sourcing region (CALABARZON/Quezon)"
+    e11_weight: med
+  freq_D3:
+    value: 4.0; unit: episodes/yr; status: verify; verified: false
+    source: "plant reliability records / agro-processing MTBF (Phase-5 interviews)"
+    e11_weight: med
+  freq_D4:
+    value: 6.0; unit: episodes/yr; status: verify; verified: false
+    source: "DOE / NGCP distribution interruption indices (SAIFI) for region"
+    e11_weight: hi
+    note: "CARRIES 54% OF UNCAPPED E11 TOTAL — highest-priority single parameter"
+  freq_D8:
+    value: 1.0; unit: episodes/yr; status: verify; verified: false
+    source: "joint typhoon+quality co-occurrence from PAGASA + PCA records"
+    e11_weight: lo
+
+  # ---------------- market availability (H4 φ-curve) --------------------------
+  buy_cap_frac_phi:
+    value: 0.3; unit: fraction-of-nominal; status: verify; verified: false
+    source: "regional copra market depth during/after typhoon (PCA trader survey
+             or post-disaster supply assessment)"
+    e11_weight: hi
+    note: "moves pooled H4 from 0.244 to 0.174 and E11 by 14%; φ(sev) correlation
+           is flagged follow-on modeling work, not a single parameter"
+
+  # ---------------- yields & splits (shape ΔR magnitude, not E11 directly) ----
+  f_kernel: {value: 0.30, unit: kg/kg-nut, status: verify, verified: false,
+             source: "coconut processing literature (Hagenmaier/Enig) + plant assay",
+             e11_weight: med, note: "sets base throughput scale"}
+  f_shell:  {value: 0.15, unit: kg/kg-nut, status: verify, verified: false,
+             source: "same", e11_weight: lo}
+  f_husk:   {value: 0.35, unit: kg/kg-nut, status: verify, verified: false,
+             source: "same", e11_weight: none}
+  f_water:  {value: 0.20, unit: L/kg-nut, status: verify, verified: false,
+             source: "same", e11_weight: lo}
+  y_oil:    {value: 0.63, unit: kg-oil/kg-copra, status: verify, verified: false,
+             source: "Table 5.1 62-65% envelope; cold-press assay", e11_weight: med}
+  y_wet:    {value: 0.30, unit: kg-oil/kg, status: est, verified: false,
+             source: "ASSUMPTION: wet-kernel route penalty vs 0.63 dry",
+             e11_weight: med, note: "wet_route option economics"}
+  y_refine: {value: 0.97, unit: kg/kg, status: verify, verified: false,
+             source: "RBD refining mass-recovery typical", e11_weight: med}
+  y_char:   {value: 0.30, unit: kg/kg-shell, status: verify, verified: false,
+             source: "carbonization yield literature", e11_weight: lo}
+
+  # ---------------- capacities & tankage (feasibility limits) ----------------
+  cap_press:  {value: 20000.0, unit: kg-copra/hr, status: verify, verified: false,
+               source: "Table 5.1", e11_weight: none}
+  cap_refine: {value: 12000.0, unit: kg-VCO/hr, status: verify, verified: false,
+               source: "Table 5.1 (F#4 constraint)", e11_weight: none}
+  I_crude_max:{value: 50000.0, unit: kg, status: verify, verified: false,
+               source: "crude tank sizing (F#4)", e11_weight: none,
+               note: "≈24 h nominal crude make; gates crude_bypass"}
+
+  # ---------------- physical conversions (fixed factors) ---------------------
+  nut_mass:   {value: 1.2, unit: kg/nut, status: est, verified: false,
+               source: "ASSUMPTION: whole-nut mass; regional average",
+               e11_weight: med, note: "scales absolute throughput -> E11 linearly"}
+  V0_php_hr:  {value: 470000.0, unit: PHP/hr, status: derived, verified: false,
+               source: "DERIVED from price vector × nominal flows",
+               e11_weight: hi, note: "recomputes automatically when prices verified"}
+
+  # ---------------- detector / disruption calibration ------------------------
+  D4_outage_range: {value: "0.5-72", unit: hr, status: verify, verified: false,
+                    source: "DOE/NGCP interruption duration distribution",
+                    e11_weight: med}
+  D1_supply_drop:  {value: "0.30-0.95", unit: fraction, status: verify,
+                    verified: false,
+                    source: "PCA post-typhoon supply records", e11_weight: med}

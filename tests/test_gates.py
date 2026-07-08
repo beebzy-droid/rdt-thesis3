@@ -170,3 +170,12 @@ def test_pyg_batch_shape_contract():
     assert y_batched.reshape(-1).shape == pred.reshape(-1).shape == (B,)
     # squeeze(1) on the [B] target would be out of range — the caught failure
     assert y_batched.ndim == 1
+
+
+def test_provenance_ledger_in_sync():
+    """The provenance ledger must not drift from code values (§9.2 silent-
+    substitution guard). Runs the SYNC half of check_provenance in-process."""
+    import subprocess, sys
+    r = subprocess.run([sys.executable, "scripts/check_provenance.py"],
+                       capture_output=True, text=True)
+    assert "SYNC OK" in r.stdout, r.stdout + r.stderr
