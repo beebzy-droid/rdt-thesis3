@@ -232,22 +232,35 @@ def f9_n2_onset():
         print("  F9 skipped (no data/n2_onset.csv — run train_gat_pyg --mode onset)")
         return
     df = pd.read_csv(path)
-    g = df.groupby(["k", "model"]).r2.agg(["mean", "std", "count"]).reset_index()
-    fig, ax = plt.subplots(figsize=(4.8, 3.0))
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(7.2, 3.0))
+    # LEFT: transfer R2 vs k — MEDIAN (artifact-immune) + IQR band; mean overlaid
+    # faded to show the near-zero-variance-denominator inflation at k=6 (boiler).
     for model, col in (("GAT", C["rdt"]), ("flat", C["cap"])):
-        d = g[g.model == model].sort_values("k")
-        se = d["std"] / d["count"].clip(lower=1) ** 0.5
-        ax.errorbar(d.k, d["mean"], yerr=1.96 * se, marker="o", ms=5,
-                    color=col, capsize=3, label=f"{model} (subset mean ±95% CI)")
-    ax.axhline(0, lw=0.7, c="k")
-    ax.set_yscale("symlog")                      # blowups at k=6 need symlog
-    ax.set_xlabel("training-option diversity k")
-    ax.set_ylabel("transfer R² to held-out options (symlog)")
-    ax.set_xticks(sorted(df.k.unique()))
-    ax.legend(fontsize=7, loc="lower left")
-    ax.set_title("N2: ΔG-transfer does NOT emerge at ≤10³ scale — GAT worsens "
-                 "with k;\nflat GBT dominates throughout (scale floor, Finding #30)",
-                 fontsize=7.5)
+        d = df[df.model == model].groupby("k").r2
+        med = d.median(); q1 = d.quantile(.25); q3 = d.quantile(.75); mean = d.mean()
+        ks = med.index.values
+        axL.plot(ks, med.values, "o-", color=col, ms=5, label=f"{model} median")
+        axL.fill_between(ks, q1.values, q3.values, color=col, alpha=0.18)
+        axL.plot(ks, mean.values, "x--", color=col, ms=5, alpha=0.45,
+                 label=f"{model} mean (outlier-sensitive)")
+    axL.axhline(0, lw=0.7, c="k"); axL.set_yscale("symlog")
+    axL.set_xlabel("training-option diversity k")
+    axL.set_ylabel("transfer R² (symlog)")
+    axL.set_xticks(sorted(df.k.unique())); axL.legend(fontsize=6, loc="lower left")
+    axL.set_title("Transfer to held-out options", fontsize=8)
+    # RIGHT: Spearman rho vs k — is there ANY ranking signal? (magnitude-free)
+    for model, col in (("GAT", C["rdt"]), ("flat", C["cap"])):
+        d = df[df.model == model].groupby("k").rho
+        axR.errorbar(d.median().index, d.median().values,
+                     yerr=[d.median() - d.quantile(.25), d.quantile(.75) - d.median()],
+                     marker="s", ms=5, color=col, capsize=3, label=model)
+    axR.axhline(0, lw=0.7, c="k"); axR.set_ylim(-0.5, 0.5)
+    axR.set_xlabel("training-option diversity k")
+    axR.set_ylabel("Spearman ρ (rank signal)")
+    axR.set_xticks(sorted(df.k.unique())); axR.legend(fontsize=7)
+    axR.set_title("Ranking signal ≈ 0 at all k", fontsize=8)
+    fig.suptitle("N2: ΔG-transfer does not emerge at ≤10³ scale — GAT median ≤ flat "
+                 "throughout, no rank signal (scale floor, F#30)", fontsize=8)
     save(fig, "F9_n2_onset")
 
 
