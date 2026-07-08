@@ -179,3 +179,18 @@ def test_provenance_ledger_in_sync():
     r = subprocess.run([sys.executable, "scripts/check_provenance.py"],
                        capture_output=True, text=True)
     assert "SYNC OK" in r.stdout, r.stdout + r.stderr
+
+
+def test_screen_rebuilds_deterministically():
+    """The GBT screen must rebuild byte-identically from its recipe (the committed
+    pickle is gitignored; the recipe + pinned sklearn + seed is the artifact).
+    Guards the reproducibility contract of scripts/reproduce.py."""
+    import hashlib, numpy as np
+    from sklearn.ensemble import HistGradientBoostingRegressor
+    d = np.load("data/gat_dataset_v1.npz", allow_pickle=True)
+    X = np.concatenate([d["X_V"].reshape(len(d["y"]), -1),
+                        d["X_E"].reshape(len(d["y"]), -1), d["dG"]], 1)
+    p1 = HistGradientBoostingRegressor(random_state=0).fit(X, d["y"]).predict(X)
+    p2 = HistGradientBoostingRegressor(random_state=0).fit(X, d["y"]).predict(X)
+    assert hashlib.sha256(p1.tobytes()).hexdigest() == \
+           hashlib.sha256(p2.tobytes()).hexdigest()
