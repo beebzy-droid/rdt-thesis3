@@ -226,10 +226,35 @@ def f8():
     save(fig, "F8_option_matrix")
 
 
+def f9_n2_onset():
+    path = pathlib.Path("data/n2_onset.csv")
+    if not path.exists():
+        print("  F9 skipped (no data/n2_onset.csv — run train_gat_pyg --mode onset)")
+        return
+    df = pd.read_csv(path)
+    g = df.groupby(["k", "model"]).r2.agg(["mean", "std", "count"]).reset_index()
+    fig, ax = plt.subplots(figsize=(4.8, 3.0))
+    for model, col in (("GAT", C["rdt"]), ("flat", C["cap"])):
+        d = g[g.model == model].sort_values("k")
+        se = d["std"] / d["count"].clip(lower=1) ** 0.5
+        ax.errorbar(d.k, d["mean"], yerr=1.96 * se, marker="o", ms=5,
+                    color=col, capsize=3, label=f"{model} (subset mean ±95% CI)")
+    ax.axhline(0, lw=0.7, c="k")
+    ax.set_yscale("symlog")                      # blowups at k=6 need symlog
+    ax.set_xlabel("training-option diversity k")
+    ax.set_ylabel("transfer R² to held-out options (symlog)")
+    ax.set_xticks(sorted(df.k.unique()))
+    ax.legend(fontsize=7, loc="lower left")
+    ax.set_title("N2: ΔG-transfer does NOT emerge at ≤10³ scale — GAT worsens "
+                 "with k;\nflat GBT dominates throughout (scale floor, Finding #30)",
+                 fontsize=7.5)
+    save(fig, "F9_n2_onset")
+
+
 if __name__ == "__main__":
     camp = load("data/campaign/*.parquet")
     cap = load("data/campaign_cap0.3/*.parquet")
     a1 = load("data/campaign_a1/*.parquet")
     print("rendering:")
-    f1_f2_f3(camp, cap); f4(camp, a1); f5(); f6(); f7(); f8()
+    f1_f2_f3(camp, cap); f4(camp, a1); f5(); f6(); f7(); f8(); f9_n2_onset()
     print(f"figures -> {FIG.resolve()}")
