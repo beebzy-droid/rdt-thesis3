@@ -141,3 +141,16 @@ class TestDisruptions:
         pin = dae_params(dp, dp.onset_hr + 1.0, 12000.0)
         pout = dae_params(dp, dp.onset_hr + dp.duration_hr + 1.0, 12000.0)
         assert min(pin[3:6]) == 0.0 and min(pout[3:6]) == 1.0
+
+
+def test_pyg_script_parses_and_guards():
+    """train_gat_pyg.py is GPU-side (torch not in container CI): gate its syntax
+    and its dataset contract here; functional smoke runs on reference hardware."""
+    import py_compile, pathlib
+    py_compile.compile("scripts/train_gat_pyg.py", doraise=True)
+    import numpy as np, pandas as pd
+    d = np.load("data/gat_dataset_v1.npz", allow_pickle=True)
+    idx = pd.read_parquet("data/gat_dataset_v1_index.parquet")
+    assert d["X_E"].shape[-1] == 8 and d["X_V"].shape[-1] == 12
+    assert len(idx) == len(d["y"]) and {"scen", "option"} <= set(idx.columns)
+    assert idx.option.nunique() == 7

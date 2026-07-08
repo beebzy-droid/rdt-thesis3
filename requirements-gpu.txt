@@ -1,0 +1,5 @@
+# Reference-GPU stack for scripts/train_gat_pyg.py (N2 scaling experiments).
+# Kept OUT of requirements.txt: container CI has no torch; core system does not
+# depend on the GAT (Finding #18 decoupling).
+torch>=2.2
+torch_geometric>=2.5
