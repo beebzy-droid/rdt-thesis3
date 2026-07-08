@@ -69,7 +69,7 @@ class RdtGAT(nn.Module):
             0, eg, b.dg) + 1e-9
         w = (b.dg / wsum[eg]).unsqueeze(1)
         g_delta = torch.zeros_like(g_mean).index_add_(0, eg, w * (h[src] + h[dst]))
-        return self.head(torch.cat([g_mean, g_delta], 1)).squeeze(1)
+        return self.head(torch.cat([g_mean, g_delta], 1)).reshape(-1)
 
 
 def fit_eval(data, tr, te, seed=0, epochs=300, lr=3e-3, dim=64, heads=4, layers=2):
@@ -86,7 +86,7 @@ def fit_eval(data, tr, te, seed=0, epochs=300, lr=3e-3, dim=64, heads=4, layers=
         for b in tr_loader:
             b = b.to(DEV)
             opt.zero_grad()
-            loss = huber(model(b), (b.y.squeeze(1) - mu) / sd)
+            loss = huber(model(b), (b.y.reshape(-1) - mu) / sd)
             loss.backward(); opt.step()
     model.eval()
     preds = []

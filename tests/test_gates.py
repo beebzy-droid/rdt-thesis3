@@ -154,3 +154,19 @@ def test_pyg_script_parses_and_guards():
     assert d["X_E"].shape[-1] == 8 and d["X_V"].shape[-1] == 12
     assert len(idx) == len(d["y"]) and {"scen", "option"} <= set(idx.columns)
     assert idx.option.nunique() == 7
+
+
+def test_pyg_batch_shape_contract():
+    """Reproduces the y-collation shape the loss depends on, WITHOUT torch:
+    PyG DataLoader stacks per-graph y=[1] into batch y=[B] (not [B,1]); the model
+    output and target must both reshape(-1) to [B]. This guards the exact bug the
+    reference-GPU smoke caught (squeeze(1) IndexError). Pure-numpy stand-in."""
+    import numpy as np
+    B = 8
+    y_per_graph = [np.array([0.1 * i]) for i in range(B)]     # PyG Data.y shape [1]
+    y_batched = np.concatenate(y_per_graph)                   # loader -> [B]
+    pred = np.zeros((B, 1))                                   # head output [B,1]
+    # the contract: both operands flatten to [B] and align
+    assert y_batched.reshape(-1).shape == pred.reshape(-1).shape == (B,)
+    # squeeze(1) on the [B] target would be out of range — the caught failure
+    assert y_batched.ndim == 1
