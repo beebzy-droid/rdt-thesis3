@@ -9,6 +9,7 @@ identical seeds. Outputs (manuscript rule: D1/D8 ΔR reported as f(φ), never sc
 """
 import sys, glob, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 import numpy as np
 import pandas as pd
 

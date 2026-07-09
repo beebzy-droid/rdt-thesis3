@@ -5,6 +5,7 @@ marginal value is measured AGAINST these numbers, not asserted.
 never straddle folds — the §5.2.1 discipline in miniature)."""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 import numpy as np, pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge

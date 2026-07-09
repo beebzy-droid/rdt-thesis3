@@ -194,3 +194,35 @@ def test_screen_rebuilds_deterministically():
     p2 = HistGradientBoostingRegressor(random_state=0).fit(X, d["y"]).predict(X)
     assert hashlib.sha256(p1.tobytes()).hexdigest() == \
            hashlib.sha256(p2.tobytes()).hexdigest()
+
+
+def test_printing_scripts_force_utf8_console():
+    """Every script that prints non-ASCII glyphs (✓/Δ/φ/≈/±/→) must import
+    rdt_core._console so Windows cp1252 consoles don't crash (UnicodeEncodeError
+    class, 2026-07-04). Guards against a new script reintroducing the crash."""
+    import pathlib
+    offenders = []
+    for p in pathlib.Path("scripts").glob("*.py"):
+        s = p.read_text(encoding="utf-8")
+        exec_lines = [l for l in s.splitlines()
+                      if ("print(" in l or "sys.exit(" in l)
+                      and not l.strip().startswith("#")
+                      and any(ord(c) > 127 for c in l)]
+        if exec_lines and "_console" not in s:
+            offenders.append(p.name)
+    assert not offenders, f"scripts print glyphs without _console: {offenders}"
+
+
+def test_console_module_reconfigures():
+    """_console must reconfigure a cp1252 stream to survive glyph output."""
+    import io, importlib
+    buf = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    import sys
+    old = sys.stdout
+    try:
+        sys.stdout = buf
+        import rdt_core._console  # noqa: F401
+        importlib.reload(rdt_core._console)
+        print("\u2713\u0394\u03c6")               # must not raise
+    finally:
+        sys.stdout = old

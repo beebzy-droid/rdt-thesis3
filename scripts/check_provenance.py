@@ -14,6 +14,7 @@ Deliberately dependency-light: parses the YAML subset used here without pyyaml
 """
 import re, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 from rdt_core.plant_dae import PlantParams
 
 

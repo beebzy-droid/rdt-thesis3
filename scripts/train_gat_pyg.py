@@ -17,6 +17,7 @@ INSTALL (reference machine):   pip install -r requirements-gpu.txt
 """
 import argparse, itertools, pathlib, sys, time
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 import numpy as np
 import pandas as pd
 

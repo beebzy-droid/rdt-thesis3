@@ -9,6 +9,7 @@ Safe to run concurrently with or after campaign.py — separate shard directory.
 """
 import argparse, os, sys, time, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 import numpy as np
 import pandas as pd
 

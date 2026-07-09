@@ -7,6 +7,7 @@ Output: data/pilot_baseline.parquet + per-category summary to stdout.
 """
 import sys, time, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 import numpy as np
 import pandas as pd
 import casadi as ca

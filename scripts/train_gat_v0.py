@@ -5,6 +5,7 @@ Bars: state-only flat GBT R2=0.623 (deployable info set); oracle-tabular 0.868
 Usage: python scripts/train_gat_v0.py <seed>   (results appended to CSV)"""
 import sys, time, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 import numpy as np, pandas as pd
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import r2_score, mean_absolute_error

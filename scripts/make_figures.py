@@ -13,6 +13,7 @@ Output: figures/*.png (300 dpi) + *.pdf.   Usage: python scripts/make_figures.py
 """
 import sys, glob, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 import numpy as np
 import pandas as pd
 import matplotlib

@@ -7,6 +7,7 @@ Metrics: R2, MAE, Spearman rank corr, sign accuracy (helps: y>0.005).
 Usage: python scripts/loto.py <held_out_option> [gat|gbt]"""
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
 import numpy as np, pandas as pd
 from scipy.stats import spearmanr
 from sklearn.ensemble import HistGradientBoostingRegressor
