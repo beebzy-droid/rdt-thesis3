@@ -282,7 +282,10 @@ the envelopes are box constraints, and the disjunctions reduce to the
 big-M-free capacity form above. The result is a pure MILP with no integrality gap
 tricks required at this size; it is solved by HiGHS (Huangfu and Hall, 2018) under
 a wall-clock time box, warm-started from the incumbent topology so that the common
-case of a small reconfiguration solves in near-constant time.
+case of a small reconfiguration solves in near-constant time. Mixed-integer linear
+programming has a long record as an operational tool in the chemical process
+industry (Kallrath, 2000), and the contribution here is not the solver but the
+graph-driven generation of the model it solves.
 
 ### 2.5 Verification: DAE transition model
 
