@@ -271,9 +271,17 @@ is created when that edge exists in $E_{\max}$; the balance rows follow the node
 adjacency; the exclusion set $\mathcal{X}$ is derived from the superstructure's
 declared incompatibilities. Adding a candidate edge to $G_{\max}$ therefore adds
 its capacity constraint, its balance contributions, and its exclusions
-automatically (N3). The result is a pure MILP with no integrality gap tricks
-required at this size; it is solved by HiGHS (Huangfu and Hall, 2018) under a
-wall-clock time box, warm-started from the incumbent topology so that the common
+The structure is a discrete process-decision problem of a familiar kind: each
+reconfigurable edge is either active, carrying flow within its capacity, or
+inactive, carrying none, which is exactly the unit-existence disjunction at the
+heart of process-synthesis formulations (Grossmann, 2002). Where a general
+synthesis problem would carry nonlinear unit models and become a mixed-integer
+nonlinear or generalized disjunctive program, the reconfiguration decision at a
+fixed operating point linearizes cleanly: the flows are linear in the selection,
+the envelopes are box constraints, and the disjunctions reduce to the
+big-M-free capacity form above. The result is a pure MILP with no integrality gap
+tricks required at this size; it is solved by HiGHS (Huangfu and Hall, 2018) under
+a wall-clock time box, warm-started from the incumbent topology so that the common
 case of a small reconfiguration solves in near-constant time.
 
 ### 2.5 Verification: DAE transition model

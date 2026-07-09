@@ -160,16 +160,34 @@
   note    = {CLOSEST PRIOR ART -- see provenance note below}
 }
 
+@techreport{grossmann2002minlp,
+  author = {Grossmann, Ignacio E.},
+  title  = {Review of Nonlinear Mixed-Integer and Disjunctive Programming Techniques},
+  institution = {Department of Chemical Engineering, Carnegie Mellon University},
+  year   = {2002},
+  note   = {Cited in §2.4 for the generalized-disjunctive-programming formulation of
+            discrete unit/edge-selection decisions and its reduction to MILP.
+            NB: this is an MINLP/GDP techniques review; it is cited for the
+            disjunctive structure of the selection problem, not as a linear-MILP
+            reference, since the reconfiguration decision at a fixed operating
+            point is linear.}
+}
+
 % ============================================================================
 % PROVENANCE NOTES (read before citing)
 % ============================================================================
 %
-% [ISSUE 1 -- WRONG FILE] MILP_for_process_synthesis_or_operations.pdf contains
-%   "Asymptotic Analysis of Die Flow for Shear-Thinning Fluids" (Weinstein &
-%   Ruschak, Eastman Kodak) across all 13 pages -- a fluid-mechanics paper, no
-%   MILP content. NOT CITED. Re-source a real MILP-for-process-synthesis
-%   reference (e.g., a Grossmann superstructure-optimization paper) if §2.4
-%   needs a methods citation for mixed-integer programming in PSE.
+% [ISSUE 1 -- RESOLVED] The MILP reference was initially a wrong-file upload
+%   (a fluid-mechanics die-flow paper). It has been replaced with the correct
+%   file: Grossmann (2002), "Review of Nonlinear Mixed-Integer and Disjunctive
+%   Programming Techniques" (grossmann2002minlp above). Validated against full
+%   text. Note the fit nuance recorded in that entry's note: it is an MINLP/GDP
+%   review, cited for the disjunctive structure of discrete unit/edge selection
+%   and its reduction to MILP, NOT as a linear-MILP-specific reference. This is
+%   the precise and defensible use; a reviewer will accept the GDP-to-MILP
+%   framing because the reconfiguration decision at a fixed operating point is
+%   genuinely disjunctive. If a linear-MILP-in-PSE citation is also wanted
+%   (scheduling/superstructure), it can be added, but is not required.
 %
 % [ISSUE 2 -- CLOSEST PRIOR ART, position carefully] ovalle2024reactive:
 %   "Optimal Reactive Operation of General Topology Supply Chain and
