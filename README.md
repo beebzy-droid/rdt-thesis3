@@ -36,3 +36,16 @@ python scripts/gate_r1.py
 No fabricated/unverified data — [est.]/[verify] flags in code comments are
 binding. No silent metric substitution — acceptance criteria are frozen;
 changes are documented amendments.
+
+## Reproducing results
+
+Cross-platform entry point (no GNU make required):
+
+    python scripts/reproduce.py          # rebuild screen + provenance + figures
+    python -m pytest tests/ -q           # 34 gates
+
+Convenience wrappers: `make <target>` (Linux/macOS) or `make.bat <target>`
+(Windows) — targets: env, gpu, test, screen, provenance, figures, reproduce,
+campaign. The GBT screen is rebuilt deterministically from its recipe; no model
+binary is committed (sklearn-version portability). Full H4/H5 campaign:
+`python scripts/campaign.py --cats D1,D3,D4,D8 --n 500 --workers 12`.
