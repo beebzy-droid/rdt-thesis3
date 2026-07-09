@@ -412,22 +412,69 @@ recovery statistics honest rather than flattering.
 
 ## 4. Results
 
-### 4.1 Simulator verification and MILP performance
+### 4.1 Engine-level verification and performance
 
-The graph-to-DAE compiler matches a hand-coded reference to 1.4×10⁻¹⁴ over 30-day
-trajectories and compiles in 3.1 ms; mass-balance closure is below 0.5%. The MILP
-selector solves in 4.7 ms median at the wired portfolio size, three orders of
-magnitude inside the 60 s cycle budget, so real-time selection is never the
-binding constraint (N3 latency claim). Verification of the auto-derivation:
-constraint generators emit HiGHS constraints directly from the graph object, unit-
-tested against hand-built miniature instances.
+Before any comparative claim, each engine must earn its place, and the numbers
+here are the paper's foundation rather than its headline. The graph-to-DAE
+compiler matches a hand-coded reference model to 1.4×10⁻¹⁴ over 30-day
+trajectories, which is machine precision and not merely agreement; the point of
+the exercise is that a model *generated from the graph object* is
+indistinguishable from one written by hand, so nothing is lost by making topology
+data. Compilation takes 3.1 ms against the 40 s budget allocated to it, a margin
+of four orders of magnitude, and mass-balance closure stays below 0.5% across the
+disruption library. The consequence is worth stating plainly: recompiling the
+plant model on every topology change, the step the digital-twin literature treats
+as the reason topology must be frozen, costs less than a single integrator step.
 
-### 4.2 Screening: parity in-distribution, a negative result on generalization
+The MILP selector solves in 4.7 ms median at the wired portfolio size, three
+orders of magnitude inside the 60 s cycle budget, so exact selection is never the
+binding constraint (N3 latency claim). The constraint generators that feed it are
+unit-tested against hand-built miniature instances: for each constraint class, a
+small graph with a known feasible set is compiled and the emitted HiGHS rows are
+checked against the enumerated ground truth. Two numerical safeguards in the
+verification engine deserve their performance numbers as well, because both were
+added in response to observed failures. Consistent initialization from the
+closed-form algebraic solution eliminated every initialization failure at
+reconfiguration instants, where the integrator's own calculation had failed
+precisely on the gate manifolds a topology change creates; and the degraded-mode
+integration ladder engages on the small minority of steps that sit at parameter
+discontinuities, so the common case pays no robustness tax.
 
-In-distribution, the graph-attention screen reaches R² = 0.644 ± 0.177 on
-scenario-disjoint folds, at parity with a flat gradient-boosted baseline on the same
-features (0.623 ± 0.159), seed-stable. Relational structure adds nothing a flat
-model cannot extract at this data scale (F#14).
+Detection closes the engine inventory. Over the full library the hybrid detector
+misses nothing: a 0% miss rate in every disruption category, with median detection
+delays of 0.5 h for step-class disruptions (the floor imposed by the 0.5 h
+observation grid), 2.5 h for slow-ramp supply declines, and 3.0 h for combined
+events, at 0.80 false alarms per 30 operating days against a budgeted 1.0. The
+fusion is what buys the zero-miss result. Run-length detection alone missed 48% of
+slow-ramp supply disruptions, because a gradual decline never concentrates
+posterior mass on short run lengths; the CUSUM arm accumulates exactly the small
+persistent deviations the posterior discards. Neither detector alone survives this
+library. Together they do, and the residual delay turns out, in §4.3, not to be
+the cost it appears.
+
+### 4.2 Screening: information value, in-distribution parity, and a negative result on generalization
+
+The screening question has three parts, and they resolve in different directions:
+how much of reconfiguration value is predictable at all, whether graph structure
+helps predict it, and whether what is learned transfers to reconfigurations never
+seen in training. The first answer sets the ceiling for everything downstream.
+With oracle features, including the disruption's true duration, a gradient-boosted
+screen explains R² = 0.868 of the value variance; restricted to the deployable
+state-only feature set, the same model reaches 0.623. The 0.245 between them is
+not a modeling deficiency. It is the measured value of disruption
+characterization, and it is dominated by a single unobservable: outage duration.
+An operator who can attach even a coarse repair-time estimate to a unit failure
+hands the screen a quarter of the variance it otherwise cannot see. That
+observation converts an apparent learning limitation into an instrumentation and
+workflow recommendation, and it recurs in the harm analysis of §4.3.
+
+On the second question, the answer is parity. In-distribution, the graph-attention
+screen reaches R² = 0.644 ± 0.177 on scenario-disjoint folds against the flat
+gradient-boosted baseline's 0.623 ± 0.159 on identical features, seed-stable
+across retraining. Relational structure adds nothing a flat model cannot extract
+at this data scale (F#14). Parity is itself informative: it says the value signal
+at this scale lives in the features, not in the message-passing topology, which
+foreshadows the third answer.
 
 The consequential result is on *generalization to unseen topology changes*, the
 capability that would justify a graph model over a tabular one. Across a
@@ -439,12 +486,18 @@ baseline, with no rank signal (Spearman ρ ≈ 0) (F#15, F#18, F#30). The mechan
 established by an option-identity-blind control, is that the change descriptor
 encodes option *identity* rather than option *physics*; descriptive edge features
 help a tree model split on them but are diluted through message passing at ~10³-
-record scale. We report this as a **scale floor**, not an impossibility: the
-untested regime is 10⁴–10⁵ examples with richer edge semantics, and the published
-curve is a baseline for successor work. Crucially, the layered architecture makes
-the negative non-blocking, because the screening slot is filled by the physics-featurized
-tabular model, which dominates every measured axis, and system performance (§4.3)
-does not gate on the graph model (N2, reported with its honest limit).
+record scale. Two robustness notes keep the curve honest. The k = 6 point contains
+a known denominator artifact, a held-out option with near-zero test variance that
+inflates the magnitude of the negative for both models, which is why the median
+rather than the mean carries the claim; and the rank-correlation panel answers the
+weaker question, whether the model preserves any ordering of candidates at all,
+with a flat zero. We report all of this as a **scale floor**, not an
+impossibility: the untested regime is 10⁴–10⁵ examples with richer edge semantics,
+and the published curve is a baseline for successor work. Crucially, the layered
+architecture makes the negative non-blocking, because the screening slot is filled
+by the physics-featurized tabular model, which dominates every measured axis, and
+system performance (§4.3) does not gate on the graph model (N2, reported with its
+honest limit).
 
 ### 4.3 Resilience improvement and comparator hardening
 
@@ -469,7 +522,39 @@ arm symmetry produces false negatives** in prescriptive-twin evaluation; the
 
 At full scale, across 2,000 pre-registered paired runs with hybrid detection gating both the
 continuous-regime switch and topology decisions, ΔR = 0.2438, 95% CI [0.2368,
-0.2511], Wilcoxon p ≈ 10⁻³¹⁰. A final objection, that a continuous controller
+0.2511], Wilcoxon p ≈ 10⁻³¹⁰. The category structure beneath the pooled number is
+where the mechanism shows. Supply interruptions gain 0.306, utility outages 0.255,
+combined events 0.275, and single-unit failures 0.140. The weakest stratum is
+diagnostic rather than embarrassing: unit failures are the most *schedulable*
+disruption class, the one a strong static policy handles best on its own, so
+topology's marginal value there is genuinely smaller, and the residual harm
+concentrates in exactly the duration-blind activations that the 0.245 information
+gap of §4.2 predicts. The dose-response is monotone in severity under the
+uncapped market and plateaus under a constrained one; the market-availability
+sensitivity, together with recovery-time results and the economic translation, is
+developed in the companion paper, and the headline here is robust to that
+sensitivity, holding above its pre-registered target with the purchased-input
+market cut to thirty percent of nominal.
+
+Safety containment held across the campaign. Reconfigurations that ended a
+paired episode worse than the static arm occurred in 3.9% of runs against a 5%
+acceptance bound, with zero safety-class constraint violations; every harmful
+episode traces to a value misjudgment inside the feasible set, never to an
+infeasible action, which is the layered pipeline doing precisely the job it was
+designed for. The screen is allowed to be wrong about *worth*; the MILP and the
+DAE verifier make it structurally unable to be wrong about *safe*.
+
+One further result inverts an intuition and completes the engine story begun in
+§4.1. Detection delay was not a net cost. Charging the loop its measured
+detection delays, rather than granting it a one-hour assumption, *improved* the
+paired outcome by 0.010, because the continuous policy in force is
+hoard-then-deploy: hours spent undetected are hours of bridge-stock accumulation,
+inventory that the eventual reconfiguration then spends to better effect. The
+general statement is that the cost of detection latency is a property of the
+policy it gates, not of the detector alone, and a detector evaluated in isolation
+against a delay-minimization objective can be optimizing the wrong thing. We are
+not aware of this coupling being reported elsewhere in the process-monitoring
+literature, and it falls out of the closed-loop evaluation for free. A final objection, that a continuous controller
 (MPC on fixed topology) might reclaim the gap, is bounded without building the
 controller: the clairvoyant two-regime envelope max(V_slow, V_fast) upper-bounds
 any causal continuous controller over the draw-regime action set, and is a genuine
