@@ -105,61 +105,165 @@ engine at the fidelity needed to reproduce it; the plant graph is defined first
 
 ### 2.1 Process network as a runtime graph
 
-The plant at time *t* is a directed attributed graph G(t) = (V, E(t), X_V(t),
-X_E(t)) whose edge set, node features, and adjacency are *time-varying*: topology
-is a state variable, not a constant. Nodes are unit operations, utility supplies,
-and storage; node features encode capacity, load, health, and buffer inventories;
-edge features encode flow, composition, temperature, pressure, and a route-physics
-descriptor (capacity and net value density). A topology change ΔG is a finite set
-of edge activations and node-mode switches drawn from a static superstructure
-G_max of all physically installable connections; every admissible G(t) is a
-subgraph of G_max. For the case-study plant, |E(G_max)| ≈ 45–60 candidate edges
-give a combinatorial change space on the order of 2³⁰, which is why a learned
-screen precedes exact optimization.
+We represent the plant at time $t$ as a directed attributed graph
+$$G(t) = \bigl(V,\ E(t),\ \mathbf{X}_V(t),\ \mathbf{X}_E(t)\bigr),$$
+in which the node set $V$ is fixed but the edge set $E(t) \subseteq E_{\max}$, the
+node-feature matrix $\mathbf{X}_V(t) \in \mathbb{R}^{|V| \times d_V}$, and the
+edge-feature matrix $\mathbf{X}_E(t) \in \mathbb{R}^{|E(t)| \times d_E}$ all vary
+with time. This is the formal statement of the paper's premise: topology, encoded
+in $E(t)$, is a state variable rather than a compile-time constant. Nodes carry
+unit operations, utility supplies, and storage; the node features $\mathbf{x}_v =
+(\text{capacity},\ \text{load},\ \text{health},\ \text{inventory}, \dots)$ and the
+edge features $\mathbf{x}_e = (\text{flow},\ \text{composition},\ T,\ P,\
+\kappa_e,\ \nu_e, \dots)$ include a route-physics descriptor of line capacity
+$\kappa_e$ and net value density $\nu_e$ whose purpose becomes clear in §4.2.
 
-### 2.2 Detection: hybrid BOCPD + CUSUM
+The set of all connections the plant could physically realize is a static
+superstructure $G_{\max} = (V, E_{\max})$, and every admissible operating topology
+is a subgraph $G(t) \subseteq G_{\max}$. A reconfiguration is an operator
+$$\Delta G:\ G(t) \mapsto G(t^+),\qquad
+E(t^+) = \bigl(E(t) \setminus E^-\bigr) \cup E^+,$$
+where $E^+ \subseteq E_{\max} \setminus E(t)$ activates dormant routes and
+$E^- \subseteq E(t)$ deactivates active ones, together with node-mode switches
+that retarget a unit's internal routing. For the case-study plant,
+$|E_{\max}| \approx 45\text{--}60$ candidate edges of which a reconfigurable
+subset $\mathcal{K} \subseteq E_{\max}$ is controllable, giving a change space of
+size $2^{|\mathcal{K}|}$ on the order of $10^9$. No exact optimizer can enumerate
+that space inside a real-time budget, which is the structural reason a learned
+screen must precede the MILP (§2.3, §2.4).
 
-Disruption onset is detected by Bayesian Online Change-Point Detection (Adams &
-MacKay, 2007), a recursive run-length posterior with a Normal-Inverse-Gamma
-predictive per channel, fused with a two-sided CUSUM drift detector. The fusion
-is not incidental: run-length triggers are structurally blind to slow supply
-ramps (48% missed on gradual feedstock decline for BOCPD alone), which the CUSUM
-arm catches. The trigger fires when posterior mass on short run lengths exceeds a
-threshold; the CUSUM arm fires when any channel's cumulative deviation exceeds a
-control limit.
+### 2.2 Detection: hybrid BOCPD with CUSUM
+
+The loop cannot re-decide until it knows something has changed, and detecting that
+change quickly, without crying wolf on ordinary process noise, is its own problem.
+We solve it with Bayesian Online Change-Point Detection (Adams and MacKay, 2007)
+augmented by a drift detector. BOCPD maintains a posterior over the run length
+$r_t$, the number of steps since the last change point. Writing
+$\mathbf{y}_{1:t}$ for the multivariate observation stream, the run-length
+posterior evolves by the recursion
+$$P(r_t \mid \mathbf{y}_{1:t}) \propto \sum_{r_{t-1}}
+P(r_t \mid r_{t-1})\,
+P(\mathbf{y}_t \mid r_{t-1}, \mathbf{y}_{t}^{(r)})\,
+P(r_{t-1} \mid \mathbf{y}_{1:t-1}),$$
+with a constant hazard $P(r_t = 0 \mid r_{t-1}) = H$ governing the prior rate of
+change points and $P(r_t = r_{t-1}+1) = 1-H$ otherwise. Each channel uses a
+conjugate Normal-Inverse-Gamma model, so the predictive
+$P(\mathbf{y}_t \mid r_{t-1}, \cdot)$ is Student-$t$ in closed form and the update
+requires no sampling. A disruption is declared when posterior mass concentrates on
+short run lengths,
+$$\sum_{r_t \le r_{\min}} P(r_t \mid \mathbf{y}_{1:t}) > \tau_{\text{BOCPD}}.$$
+
+This trigger is fast on abrupt changes and structurally blind to slow ones: a
+gradual feedstock decline never produces a sharp posterior collapse, and in our
+experiments BOCPD alone missed 48% of slow-ramp supply disruptions (§4). We
+therefore fuse a two-sided cumulative-sum detector on the same standardized
+channels,
+$$S_t^{+} = \max\!\bigl(0,\ S_{t-1}^{+} + z_t - k\bigr),\qquad
+S_t^{-} = \max\!\bigl(0,\ S_{t-1}^{-} - z_t - k\bigr),$$
+which fires when $\max(S_t^{+}, S_t^{-})$ exceeds a control limit $h$. The CUSUM
+accumulates small persistent deviations that the run-length posterior discards as
+noise, so the union of the two triggers detects both the shock and the slow
+bleed. The reference value $k$ and limit $h$ are set from a false-alarm budget on
+disruption-free calibration runs (§4.4).
 
 ### 2.3 Screening: graph-attention surrogate
 
-A GATv2 surrogate (Brody et al., 2022) with edge features scores each candidate
-ΔG for feasibility and a multi-attribute impact vector. The screen prunes the
-combinatorial change space to a tractable candidate set for exact optimization; it
-is a speed layer, not a correctness layer; every candidate it passes is re-checked
-by the downstream MILP constraints and DAE verifier. Its role, limits, and a
-decisive negative result on its generalization are reported in §4.2.
+With a change detected, the loop faces the combinatorial space of §2.1 and has
+milliseconds to shrink it. The screen is a graph-attention network that scores
+each candidate reconfiguration for feasibility and impact, cheaply enough to
+evaluate the whole candidate set every cycle. We use the GATv2 formulation (Brody
+et al., 2022), whose dynamic attention corrects the static-ranking limitation of
+the original GAT. For a candidate topology, node representations update by
+$$\mathbf{h}_i' = \sigma\!\Bigl(\textstyle\sum_{j \in \mathcal{N}(i)}
+\alpha_{ij}\, \mathbf{W}\,[\mathbf{h}_j \,\|\, \mathbf{e}_{ij}]\Bigr),$$
+where $\mathbf{e}_{ij}$ carries the edge features including the reconfiguration
+indicator, $\|$ denotes concatenation, and the attention coefficients are
+$$\alpha_{ij} = \operatorname{softmax}_j\!\bigl(
+\mathbf{a}^{\!\top}\,\text{LeakyReLU}\bigl(\mathbf{W}\,
+[\mathbf{h}_i \,\|\, \mathbf{h}_j \,\|\, \mathbf{e}_{ij}]\bigr)\bigr).$$
+Placing the nonlinearity before the projection $\mathbf{a}$ is what makes the
+attention dynamic: the ranking of neighbours can depend on the query node, which a
+static GAT cannot express. Multi-head attention is concatenated across layers, and
+a graph-level readout combines a global mean with a change-localized pool over the
+endpoints of the reconfigured edges,
+$$\mathbf{g} = \bigl[\,\operatorname{mean}_{i \in V} \mathbf{h}_i \ \big\|\
+\textstyle\sum_{e \in \Delta G} w_e (\mathbf{h}_{s(e)} + \mathbf{h}_{d(e)})\,\bigr],
+\qquad w_e = \frac{|\Delta G_e|}{\sum_{e'} |\Delta G_{e'}|},$$
+feeding a shallow multilayer perceptron that emits the predicted resilience impact.
+The screen is a speed layer, not a correctness layer. Every candidate it advances
+is re-checked by the MILP constraints (§2.4) and the DAE verifier (§2.5), so a
+screening false positive costs a solver iteration, never an infeasible action. Its
+role, its limits, and a decisive negative result on its generalization to unseen
+reconfigurations are the subject of §4.2.
 
 ### 2.4 Selection: MILP over screened candidates
 
-Given the screened candidate set, a mixed-integer linear program selects and
-sequences reconfigurations. Binary variables select candidates; continuous
-variables carry post-reconfiguration flows. The objective maximizes weighted
-predicted benefit subject to six constraint classes: a simultaneity limit,
-resource budget, node mass balance, pipe capacity, pressure/temperature envelopes,
-and pairwise safety exclusions. The defining property is that **every constraint
-is auto-derived from the graph object**: activating an edge in G_max adds its
-capacity constraint, its balance terms, and its exclusion entries with no hand
-coding (N3). The formulation is a pure MILP solved by HiGHS with a wall-clock
-time box and warm start from the incumbent topology.
+The screen ranks candidates but cannot enforce that a chosen set is jointly
+feasible: two individually attractive reconfigurations may compete for the same
+crew, violate an exclusion, or overload a shared line. Selection is therefore an
+exact mixed-integer linear program over the screened set $\mathcal{C}$. Let
+$x_k \in \{0,1\}$ select candidate $k$, let $f_e \ge 0$ be the post-reconfiguration
+flow on edge $e$, and let $\hat{b}_k$ be the screen's predicted benefit for
+candidate $k$. The program is
+$$\max_{x, f}\ \sum_{k \in \mathcal{C}} \hat{b}_k\, x_k
+\quad\text{subject to}$$
+$$\textstyle\sum_{k} x_k \le N_{\max}
+\tag{simultaneity}$$
+$$\textstyle\sum_{k} c_k\, x_k \le B
+\tag{resource budget}$$
+$$\textstyle\sum_{e \in \text{in}(v)} f_e - \sum_{e \in \text{out}(v)} f_e = 0
+\quad \forall v \in V \setminus \{\text{sources, sinks}\}
+\tag{mass balance}$$
+$$f_e \le \kappa_e\, a_e(x) \quad \forall e \in E_{\max}
+\tag{capacity}$$
+$$\underline{P}_u \le P_u(x) \le \overline{P}_u,\quad
+\underline{T}_u \le T_u(x) \le \overline{T}_u \quad \forall u
+\tag{envelopes}$$
+$$x_a + x_b \le 1 \quad \forall (a,b) \in \mathcal{X}
+\tag{safety exclusions}$$
+where $a_e(x)$ is the activation state of edge $e$ implied by the selection,
+$c_k$ and $B$ are the per-change and total resource costs, and $\mathcal{X}$ is the
+set of mutually exclusive reconfiguration pairs.
+
+The property that matters for reproducibility and for deployment to a new plant is
+that **none of these constraints is written by hand for the case study**. Each is
+emitted by a generator that reads the graph object: the capacity row for an edge
+is created when that edge exists in $E_{\max}$; the balance rows follow the node
+adjacency; the exclusion set $\mathcal{X}$ is derived from the superstructure's
+declared incompatibilities. Adding a candidate edge to $G_{\max}$ therefore adds
+its capacity constraint, its balance contributions, and its exclusions
+automatically (N3). The result is a pure MILP with no integrality gap tricks
+required at this size; it is solved by HiGHS (Huangfu and Hall, 2018) under a
+wall-clock time box, warm-started from the incumbent topology so that the common
+case of a small reconfiguration solves in near-constant time.
 
 ### 2.5 Verification: DAE transition model
 
-The selected transition is verified on a semi-explicit index-1 differential-
-algebraic model (CasADi/Sundials CVODE), with differential states for inventories,
-dryer-moisture chains, and evaporator holdup; algebraic equations for
-quasi-steady equilibrium and utility pressure-flow balances. Consistent
-initialization uses the closed-form algebraic solution, with a degraded-mode
-integration ladder (loose tolerance, then substepping) at parameter
-discontinuities. A transition is verified if the trajectory reaches the target
-steady state without constraint violation.
+A selection that is feasible on paper may still be unreachable in practice: the
+plant cannot jump between steady states, and the transient between them can violate
+a constraint the endpoint respects. The verifier integrates the reconfiguration on
+a semi-explicit index-1 differential-algebraic model
+$$\dot{\mathbf{x}} = \mathbf{f}(\mathbf{x}, \mathbf{z}, \mathbf{p}, t),\qquad
+\mathbf{0} = \mathbf{g}(\mathbf{x}, \mathbf{z}, \mathbf{p}, t),$$
+where the differential states $\mathbf{x}$ carry buffer inventories, the
+serial dryer-moisture chain, and evaporator holdup, and the algebraic variables
+$\mathbf{z}$ satisfy quasi-steady equilibrium relations and the utility
+pressure-flow balances. The system is compiled and integrated with
+CasADi (Andersson et al., 2019) over Sundials.
+
+Two numerical points earned their place through failure during development and are
+reported because they generalize. First, the algebraic system is explicit in
+$\mathbf{z}$ by construction, so consistent initialization uses the closed-form
+solution $\mathbf{z}_0 = \mathbf{g}_z^{-1}(\mathbf{x}_0, \mathbf{p})$ rather than a
+Newton solve; relying on the integrator's own initial-condition calculation failed
+at the parameter discontinuities that a reconfiguration introduces, precisely when
+the plant state sits on a gate manifold. Second, at those discontinuities the
+integrator is protected by a degraded-mode ladder: a retry at loosened tolerance,
+then a ten-fold substepped integration, invoked only on failure so the common case
+pays nothing. A reconfiguration is verified when the trajectory reaches the target
+steady state within tolerance and violates no capacity or envelope constraint in
+transit; otherwise it is rejected and the MILP re-solved with that candidate
+excluded.
 
 ### 2.6 Real-time composition and the runtime-topology architecture
 
@@ -179,35 +283,81 @@ choice.
 ### 3.1 Reference plant
 
 The demonstration plant is a physics-based model of an integrated coconut
-processing complex (seven unit operations: receiving, dehusking, drying, cold
-press, refining, carbonization, and evaporation; four utility networks; four product
-streams). It is chosen as a topologically rich, disruption-vulnerable
-agro-industrial archetype: multi-product with economic routing trade-offs,
-multi-path with shared utilities, and feedstock-synchronized. The seven modeled
-reconfiguration options are a deliberate subset of the candidate superstructure,
-selected to span the value structure the screen must learn, spanning rescue options, a
-harmful-by-default option, and near-zero options, with extension to the full
-candidate set mechanical through the same auto-derivation path (§4.5).
+processing complex (ICPC) comprising seven unit operations (receiving, dehusking,
+drying, cold press, refining, carbonization, and evaporation), four utility
+networks (steam, power, cooling water, compressed air), and four saleable product
+streams (virgin coconut oil, copra meal, shell charcoal, and coconut-water
+concentrate). We chose this archetype deliberately, because it stresses every
+part of the framework at once. It is multi-product, so a disruption forces genuine
+economic trade-offs about which route to sacrifice rather than a single obvious
+response. It is multi-path, with kernel, shell, husk, and water branches diverging
+early and sharing utilities downstream, so a utility loss propagates across
+products that appear unrelated on the flowsheet. And it is feedstock-synchronized,
+because every branch begins at the same nut intake, so a supply cut starves the
+entire plant simultaneously rather than degrading it gracefully. An agro-industrial
+complex of this kind is also the setting where the economic stakes of resilience
+are largest, since the raw material is perishable and the disruptions are frequent.
+
+The seven modeled reconfiguration options are a deliberate subset of the candidate
+superstructure, not a limitation of convenience. They were selected to span the
+value structure the screen must learn: rescue options that recover large value
+under the right disruption, a harmful-by-default option whose benefit is negative
+outside a narrow duration window, and near-zero options whose value is marginal
+everywhere. This spread is what lets §4.2 test whether the screen has learned the
+*physics* of a reconfiguration or merely its *identity*. Extending the model to the
+remaining candidate edges is mechanical: each new edge adds its terms through the
+same graph-driven auto-derivation (§2.4), raising the achievable resilience ceiling
+without altering the architecture (§4.5).
 
 ### 3.2 Disruption library and pre-registration
 
-Eight disruption categories (feedstock quantity/quality, unit failure, utility
-outage, logistics, cascade, drought, combined) are sampled by Latin-hypercube over
-severity-stratified parameter ranges. All labels and evaluation scenarios derive
-from the physics forward model and carry a synthetic-data class marker; no real
-plant data enters any result. The full-scale evaluation is **pre-registered**:
-analysis endpoints, statistical tests, and acceptance criteria frozen at a commit
-hash before the campaign executed (F#23), a discipline uncommon in process-systems
-ML and, as §4.4 shows, one that caught a model artifact rather than merely analyst
-bias.
+The disruption library spans eight categories: feedstock quantity and quality
+shocks, unit failures, utility outages, logistics interruptions, cascading
+failures, drought-driven multi-week supply deficits, and combined events that fire
+more than one category at once. Each category is parameterized by onset time,
+severity, and duration, and scenarios are drawn by Latin-hypercube sampling over
+severity-stratified ranges so that the campaign covers the full disruption
+envelope rather than clustering near typical cases. Severity ranges for the
+supply and utility categories are calibrated to regional records where those
+records exist, and flagged as planning-grade where they do not (§9.2 of the
+research lifecycle). Every label and every evaluation scenario is generated by the
+physics forward model and carries a synthetic-data class marker at the row level;
+no real plant data enters any number in this paper.
+
+The full-scale evaluation is pre-registered. Analysis endpoints, statistical
+tests, and acceptance criteria were frozen at a specific commit hash before the
+2,000-run campaign executed, so the analysis could not be tuned to the result
+after seeing it. Pre-registration is still uncommon in simulation-based
+process-systems studies, and it is sometimes dismissed as ceremony when the
+analyst and the modeler are the same person. Section 4.4 offers a concrete rebuttal:
+here it caught a genuine modeling artifact, an unphysical assumption that the
+frozen analysis flagged precisely because a pre-committed prediction failed to
+appear, which an unconstrained post-hoc analysis would very likely have explained
+away.
 
 ### 3.3 Metrics
 
-Resilience is the normalized area under the recovery curve, R(T) = (1/T)∫₀ᵀ
-P(τ)/P₀ dτ, on a margin-weighted value basis (mass-basis R is insensitive to
-quality-destroying disruptions). The headline comparative quantity is ΔR = R(RDT)
-− R(static), computed pairwise on identical disruption paths with common random
-numbers. The companion operational metric is time-to-80%-recovery.
+Resilience is measured as the normalized area under the recovery curve. Writing
+$P(\tau)$ for the instantaneous production value and $P_0$ for its pre-disruption
+level, the resilience integral over a horizon $T$ is
+$$R(T) = \frac{1}{T}\int_{0}^{T} \frac{P(\tau)}{P_0}\, d\tau,$$
+evaluated on a $T = 72$ hour window after onset. A subtlety that changes the
+result is the choice of $P$: on a pure mass basis, $R$ is nearly insensitive to a
+disruption that halves product *quality* while preserving throughput, because the
+kilograms still flow. We therefore compute $P$ on a margin-weighted value basis,
+$P(\tau) = \sum_p \nu_p\, \dot{m}_p(\tau)$, summing product mass flows $\dot{m}_p$
+weighted by net value density $\nu_p$, so that quality-destroying disruptions
+register their true economic damage.
+
+The headline comparative quantity is the paired difference
+$$\Delta R = R_{\text{RDT}} - R_{\text{static}},$$
+computed on identical disruption realizations under common random numbers, which
+removes scenario-to-scenario variance from the comparison and sharpens every
+confidence interval. The companion operational metric is the time to 80% recovery,
+$\text{TTR}_{80}$, the first time after onset at which $P(\tau)/P_0$ returns to and
+holds above $0.8$; it is undefined (reported separately, never as zero) for
+episodes that do not recover within the horizon, a convention that keeps the
+recovery statistics honest rather than flattering.
 
 ## 4. Results
 
