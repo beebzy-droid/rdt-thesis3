@@ -4,7 +4,10 @@
 Carries novelty claims N1–N3. Economics presented as indicative pending source
 verification (§9.2 of the research lifecycle). Every quantitative result traces to
 the thesis findings register (F#n); companion Paper 2 (RESS) carries the
-resilience-and-impact claims N4–N5.*
+resilience-and-impact claims N4–N5. All in-text citations are validated against
+source PDFs in `references.bib`; two provenance items are flagged there (a
+wrong-file MILP upload to re-source, and the closest prior art, Ovalle et al. 2024,
+distinguished explicitly in §1.2).*
 
 **Target length:** ~8,500 words + 6 figures. **Article type:** full research paper.
 
@@ -66,27 +69,49 @@ is precisely the behavior a topology-frozen twin cannot follow. It cannot draw t
 reconfigured plant, cannot trace a recovery trajectory through a network it is
 forbidden to redraw, and so it falls silent in exactly the window, the first hours
 after onset, when the routing choices being made on the plant floor decide whether
-throughput returns in days or in weeks. The twin is most eloquent when the plant
+throughput returns in days or in weeks. Resilience-aware design has become an
+active concern in process systems (Chrisandina et al., 2022; Ab Rahim et al.,
+2024), yet the twin that would support it in real time has been missing. The twin is most eloquent when the plant
 is calm and mute when the plant is in crisis. That inversion is the problem this
 paper sets out to fix.
 
 ### 1.2 The gap and contribution
 
 Three research communities have each walked up to the edge of this problem, and
-each has stopped just short of it. Process digital twins (Grieves, 2014; Rasheed
-et al., 2020; Kapteyn et al., 2021) have given us models of remarkable physical
-fidelity, but on a flowsheet that is settled before the first equation is solved.
-Network-resilience research (Bruneau et al., 2003; Ouyang, 2014) has thought
-deeply about reconfiguring networks under stress, yet its networks are abstractions
-of flow, innocent of thermodynamics, of unit dynamics, and of the awkward fact
-that a plant cannot teleport from one steady state to another without passing
-through a transient that may itself violate a constraint. The graph-neural-network
-literature has learned to read process topologies with real sophistication, but
-always to predict a property *of* a fixed graph, never to reason about the
-consequences of *changing* it. Between these three lies an empty space, and it has
-a precise shape: no published framework makes plant topology a runtime decision
+each has stopped just short of it. Process digital twins (Grieves and Vickers,
+2017; Kapteyn et al., 2021; Peterson et al., 2024) have given us models of
+remarkable physical fidelity, but on a flowsheet that is settled before the first
+equation is solved; the recent process-engineering survey of Peterson et al.
+(2024), published in this journal, catalogues computational methods for digital
+twins without topology ever appearing as a decision variable. Network-resilience
+research (Bruneau et al., 2003; Ouyang, 2014) has thought deeply about
+reconfiguring networks under stress, yet its networks are abstractions of flow,
+innocent of thermodynamics, of unit dynamics, and of the awkward fact that a plant
+cannot teleport from one steady state to another without passing through a
+transient that may itself violate a constraint. The graph-neural-network
+literature in process systems has learned to read process topologies with real
+sophistication (Stops et al., 2023; Anthony et al., 2024; Schulze Balhorn et al.,
+2025), but always to generate, complete, or predict a property *of* a graph, never
+to reason in real time about the consequences of *changing* an operating plant's
+topology under disruption. Between these three lies an empty space, and it has a
+precise shape: no published framework makes plant topology a runtime decision
 variable of a physics-consistent digital twin operating under a real-time budget.
 That empty space is where this work lives.
+
+The nearest neighbour to the present work, and the one a knowledgeable reader will
+reach for first, is the reactive supply-chain optimization of Ovalle et al. (2024),
+which also treats "general topology" networks "under disruptions." The distinction
+is one of granularity and mechanism. That work optimizes the operation of a
+supply-chain and manufacturing *network*, whose nodes are facilities and
+inventories, through mathematical programming. The reactive digital twin
+reconfigures the *physics-level topology of a single process complex*, whose edges
+are material streams, unit routings, and utility connections, through a closed loop
+that detects the disruption, screens candidate rewirings with a learned surrogate,
+selects among them by MILP, and verifies each against a differential-algebraic
+model of the transient. Both are reactive and both concern topology; they operate
+at different scales and answer different questions, and the framework below is
+distinguished by its physics-level reconfiguration and its real-time
+sensing-to-verification loop.
 
 This paper contributes: (N1) the first reactive digital twin architecture with
 runtime topology reconfiguration in chemical process engineering; (N2) the first
@@ -137,7 +162,10 @@ screen must precede the MILP (§2.3, §2.4).
 The loop cannot re-decide until it knows something has changed, and detecting that
 change quickly, without crying wolf on ordinary process noise, is its own problem.
 We solve it with Bayesian Online Change-Point Detection (Adams and MacKay, 2007)
-augmented by a drift detector. BOCPD maintains a posterior over the run length
+augmented by a drift detector; process-monitoring fault detection has a long
+lineage in our field (Venkatasubramanian et al., 2003), but the reconfiguration
+setting needs both fast onset detection and slow-drift sensitivity, which the
+hybrid below provides. BOCPD maintains a posterior over the run length
 $r_t$, the number of steps since the last change point. Writing
 $\mathbf{y}_{1:t}$ for the multivariate observation stream, the run-length
 posterior evolves by the recursion
@@ -287,7 +315,8 @@ processing complex (ICPC) comprising seven unit operations (receiving, dehusking
 drying, cold press, refining, carbonization, and evaporation), four utility
 networks (steam, power, cooling water, compressed air), and four saleable product
 streams (virgin coconut oil, copra meal, shell charcoal, and coconut-water
-concentrate). We chose this archetype deliberately, because it stresses every
+concentrate); the unit operations and their yields follow standard coconut-
+processing practice (Ng et al., 2021). We chose this archetype deliberately, because it stresses every
 part of the framework at once. It is multi-product, so a disruption forces genuine
 economic trade-offs about which route to sacrifice rather than a single obvious
 response. It is multi-path, with kernel, shell, husk, and water branches diverging
