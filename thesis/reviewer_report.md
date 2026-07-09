@@ -43,7 +43,7 @@ even in Paper 1.* Resolution options, in order of preference:
 
 ## Major (address in revision; each is a likely reviewer comment)
 
-**M1 — H6 (≤60 s cycle) is claimed "met" but is not measured.** §6.4/§7.6 are
+**M1 — H6 (≤60 s cycle) is claimed "met" but is not measured.** [ADDRESSED 2026-07-04: H6 restated as "not tested at production conditions" in results §6.4/table and discussion RQ3; no checkmark remains.] §6.4/§7.6 are
 honest that the 0.5 h grid floors detection delay and that the 60 s target "lives
 at production sampling." A reviewer will read the H6 row of the adjudication
 table ("Met in-sim") as overclaiming, because the *cycle* was never run at
@@ -53,19 +53,24 @@ work (§7.6)." Do not leave a checkmark next to H6. Honesty here is free and
 pre-empts a credibility ding that would spill onto H4/H5.
 
 **M2 — The strong baseline is fixed-schedule; the MPC-lite comparator is named
-but not built.** §7.6 owns this, which helps — but a sharp reviewer will ask
-"how much of your 0.244 survives against a receding-horizon continuous
-controller?" The current answer ("bounded but nonzero erosion, ≥90% of scenarios
-hoard→deploy already dominates") is *argued*, not *shown*. **Fix options:** (a)
-build the MPC-lite arm (the honest close — but scope/time cost); or (b)
-strengthen the argument with a bounding calculation: the maximum ΔR a perfect
-continuous controller could reclaim is capped by the gap between hoard→deploy and
-the *clairvoyant* continuous optimum on the same paths, which you can compute
-offline without building the controller. I'd do (b) as a bounding paragraph — it
-converts an assertion into an inequality with numbers, which is what the reviewer
-wants, at a fraction of (a)'s cost.
+but not built.** [ADDRESSED 2026-07-04 via `scripts/clairvoyant_bound.py`.]
+§7.6 owns this, which helps — but a sharp reviewer will ask "how much of your
+0.244 survives against a receding-horizon continuous controller?" **Resolution
+shipped (M2(b) route): a clairvoyant two-regime envelope** V_clair(t) =
+max(V_slow(t), V_fast(t)) computes an *optimistic upper bound* on any causal
+continuous controller over the slow/fast draw-regime action set — it grants free,
+instantaneous, perfect-foresight switching that strictly dominates any realizable
+MPC over the same actions. If ΔR vs this bound has a CI excluding zero, no such
+controller can erase the topology advantage. Container smoke (D1, n=6) returns
+ΔR_bound ≈ 0.35 with CI excluding 0 — SURVIVES — though the bound is loose where
+regimes don't cross (envelope = onset-switch schedule on those paths). **Author
+action: run `python scripts/clairvoyant_bound.py --cats D1,D3,D4,D8 --n 500` on
+reference hardware; report the pooled ΔR_bound and its CI in §6.5 and cite it in
+the M2 limitation paragraph.** Residual, stated in-text: the bound covers the
+two-regime action set; a continuous draw-rate-modulation controller is not
+bounded and remains named future work.
 
-**M3 — N=7 wired options of a 19-edge candidate set.** The novelty claim is
+**M3 — N=7 wired options of a 19-edge candidate set.** [ADDRESSED 2026-07-04: discussion §7.6 scope paragraph reframes the 7 as a deliberate value-class-spanning subset (F#17/F8), states extension is mechanical.] The novelty claim is
 "topology reconfiguration," but only 7 of 19 candidate edges are physically
 modeled in the compiler. A reviewer will ask whether the result is an artifact of
 which 7 were chosen. **Fix:** one paragraph in §5/§6 stating the selection

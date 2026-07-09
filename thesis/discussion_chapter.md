@@ -23,12 +23,15 @@ bounded economic cost rather than an infeasible action — zero safety-class
 violations across 2,000 runs (E9 count class), harm limited to 3.9% of episodes
 with magnitude captured in the paired ΔR itself.
 
-**RQ3 (end-to-end cycle within budget).** Met in simulation with orders-of-
-magnitude margin; the production-form latency claim is explicitly deferred to
-deployment hardware (§6.4). The binding real-time constraint in this system is
-not compute but *information*: detection delay (0.5–3.0 h measured) and the
-0.5 h observation grid dominate the decision timeline, and §7.3 shows even these
-are not always costs.
+**RQ3 (end-to-end cycle within budget).** The compute-time budget is met with
+orders-of-magnitude margin — the full decision cycle executes in well under one
+second of wall-clock against the 60 s target — but this is a *compute-latency*
+result, not a validated *production-latency* one: the 0.5 h observation grid and
+simulation-time execution mean the deployed 60 s cycle at production sampling
+rates is not adjudicable here and is reported as future work (§7.6). The binding
+real-time constraint in this system is not compute but *information*: detection
+delay (0.5–3.0 h measured) and the observation grid dominate the decision
+timeline, and §7.3 shows even these are not always costs.
 
 **RQ4 (resilience improvement and its structure).** ΔR = 0.2438 [0.2368, 0.2511]
 uncapped and 0.1739 [0.1675, 0.1803] under a pessimistic purchased-copra market
@@ -184,9 +187,18 @@ disruptions; production sampling (minutes) is where the 60 s cycle claim lives.
 **Economic parameters.** 0/30 verified as of this draft; the strict gate is red
 by design. freq_D4 (54% of E11) and φ head the worklist (F#29).
 
-**Scope.** One plant archetype (ICPC), seven wired options of a 19-edge
-candidate set, four primary disruption categories (D2/D5/D6/D7 secondary sweep
-pending). Breadth claims are bounded accordingly.
+**Scope.** One plant archetype (ICPC), four primary disruption categories
+(D2/D5/D6/D7 secondary sweep pending). The seven reconfiguration options modeled
+in the compiler are a deliberate subset of the 19-edge candidate superstructure,
+not an implementation ceiling: they were selected to span the full value
+structure the screen must learn — rescue options (solar-train, nut-sale, wet-
+route), a harmful-by-default option (crude-bypass below its ~60 h duration
+crossover, F#5), and near-zero options (shell-boiler), with the resulting
+option–disruption value matrix (F#17, Figure F8) confirming the coverage.
+Extending the compiler to the remaining candidate edges is mechanical — each adds
+its flow terms, capacity constraint, and HAZOP exclusions through the same
+auto-derivation path — and would raise the oracle ΔR ceiling without changing the
+architecture. Breadth claims are bounded to the demonstrated set accordingly.
 
 ## 7.7 Implications
 

@@ -106,9 +106,12 @@ Benchmark at the locked configuration (E10 ✓, Figure F6): false alarms
 disruptions (D2/D3/D4), 2.5 h for slow-ramp D1, 3.0 h for combined D8; miss rate
 0% in all categories; pre-onset false alarms ≤ 0.12/run. The 0.5 h observation
 grid floors measurable delay; the 60 s lifecycle target applies at production
-sampling rates and is not adjudicable in this simulation (H6 is met trivially on
-compute latency — the full decision cycle executes in well under one second —
-and its production form is deferred to deployment hardware).
+sampling rates and is not adjudicable in this simulation. **H6 is therefore
+reported as not tested at production conditions**: the compute-time budget is met
+with a >10³ margin (the full decision cycle executes in well under one second of
+wall-clock), but the end-to-end latency claim at production sampling (minutes,
+not the 0.5 h simulation grid) requires deployment hardware and is future work
+(§7.6). No resilience result depends on H6.
 
 ## 6.5 Closed-loop protocol and comparator hardening
 
@@ -216,7 +219,7 @@ provenance entry is closed (§9.2).
 | H3 | MILP < 5 s, K ≤ 50 | **PASS** — 4.7 ms at K = 7; 10³ margin |
 | H4 | ΔR ≥ 0.15, CI excluding 0.10 | **PASS, φ-robust** — 0.244 [0.237, 0.251] uncapped; 0.174 [0.168, 0.180] at φ = 0.3; both CIs clear the 0.15 target itself |
 | H5 | TTR₈₀ reduction ≥ 30% | **PASS** — 57.7% [55.2, 60.2], floor by construction |
-| H6 | cycle ≤ 60 s p95 | **Met in-sim** (compute ≪ 1 s); production-latency form deferred to deployment hardware — not adjudicable in simulation |
+| H6 | cycle ≤ 60 s p95 | **Not tested at production conditions** — compute budget met with >10³ margin (cycle ≪ 1 s wall-clock); end-to-end latency at production sampling rates requires deployment hardware (§7.6), future work |
 
 The through-line of the results is a single empirical claim instantiated three
 independent ways (options F#5, screening F#13, draw policy F#20): **the value of
