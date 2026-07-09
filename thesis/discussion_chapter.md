@@ -173,13 +173,17 @@ inverted-U and reduce D1/D8 tails further. Implementing φ(sev) is a scenario-
 model change flagged in the register — until then, the φ-curve brackets, not
 resolves, the tail.
 
-**The comparator family is fixed-schedule.** The strong static twin selects
-among four onset-aware schedules with oracle onset; a receding-horizon
-continuous optimizer (MPC-lite) on fixed topology is the one stronger causal
-comparator not yet built. Given that hoard→deploy already dominates its family
-in ≥ 90% of scenarios and the RDT beats it with every informational
-disadvantage, the expected erosion is bounded but nonzero — it is named future
-work rather than assumed away.
+**The comparator family is fixed-schedule, but the continuous-control objection
+is bounded.** The strong static twin selects among four onset-aware schedules
+with oracle onset. A receding-horizon continuous optimizer (MPC-lite) on fixed
+topology was not built; instead its achievable resilience is *upper-bounded* by
+the clairvoyant two-regime envelope (§6.5), against which the RDT retains
+ΔR = 0.294 [0.286, 0.302] — a margin exceeding the headline result, because a
+stronger continuous baseline cannot access the rerouting and product-slate value
+that topology adaptation reaches. The bound covers the slow/fast draw-regime
+action set; a controller with continuous draw-rate modulation is not bounded and
+remains named future work. This converts the standard "did you compare against
+MPC?" objection from an open threat into a quantified inequality.
 
 **Detection at 0.5 h grid.** Delay medians sit at the grid floor for step-class
 disruptions; production sampling (minutes) is where the 60 s cycle claim lives.
