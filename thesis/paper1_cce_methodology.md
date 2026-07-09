@@ -99,19 +99,30 @@ variable of a physics-consistent digital twin operating under a real-time budget
 That empty space is where this work lives.
 
 The nearest neighbour to the present work, and the one a knowledgeable reader will
-reach for first, is the reactive supply-chain optimization of Ovalle et al. (2024),
-which also treats "general topology" networks "under disruptions." The distinction
-is one of granularity and mechanism. That work optimizes the operation of a
-supply-chain and manufacturing *network*, whose nodes are facilities and
-inventories, through mathematical programming. The reactive digital twin
-reconfigures the *physics-level topology of a single process complex*, whose edges
-are material streams, unit routings, and utility connections, through a closed loop
-that detects the disruption, screens candidate rewirings with a learned surrogate,
-selects among them by MILP, and verifies each against a differential-algebraic
-model of the transient. Both are reactive and both concern topology; they operate
-at different scales and answer different questions, and the framework below is
-distinguished by its physics-level reconfiguration and its real-time
-sensing-to-verification loop.
+reach for first, is the reactive network operation of Ovalle et al. (2024), which
+also concerns "general topology" networks "under disruptions." Because the titles
+sit so close, the distinction deserves to be exact. Ovalle et al. address a
+multi-material **supply-chain and manufacturing network**, whose nodes are
+suppliers, plants, warehouses, and customers, and they decide shipment routes,
+production schedules, acquisition, and order management by a multiperiod
+mixed-integer linear program that minimizes the financial impact of a disruption
+over a daily-to-hourly horizon. Their topology is an arbitrary but *fixed*
+substrate: the physical network design is given, and flows are optimized within
+it. The reactive digital twin answers a different question at a different scale. Its
+nodes are unit operations, utilities, and storage; its edges are material streams,
+unit routings, and utility connections *inside a single process complex*; and its
+central decision is to **physically rewire that plant in real time**, activating
+and deactivating edges as a disruption unfolds. Where Ovalle solves one monolithic
+program over a static network, the twin runs a recurrent loop that detects the
+disruption online, screens a combinatorial reconfiguration space with a learned
+surrogate, selects by MILP, and verifies each candidate against a differential-
+algebraic model of the plant transient. The two works share two words, reactive
+and topology, and share MILP as an exact-optimization layer; they differ in object
+(supply-chain network versus process plant), in granularity (facilities versus
+streams and units), in physics (none versus an index-1 differential-algebraic
+model), and in machine (a single optimization versus a closed sensing-to-
+verification loop). The twin occupies precisely the plant-physics-level, real-time,
+dynamics-verified niche that network-operational formulations bracket out.
 
 This paper contributes: (N1) the first reactive digital twin architecture with
 runtime topology reconfiguration in chemical process engineering; (N2) the first
