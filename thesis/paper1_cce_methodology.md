@@ -317,12 +317,12 @@ excluded.
 
 ### 2.6 Real-time composition and the runtime-topology architecture
 
-The four engines compose asynchronously: detection runs continuously; screening,
+The four engines compose asynchronously (Figure 1): detection runs continuously; screening,
 selection, and verification run on trigger, each with a hard time budget and a
 defined degraded mode, so the cycle never blocks. The architectural enabler is
 that **the plant model's topology is a runtime data structure** rather than
 compiled code (N1): a graph-to-DAE compiler regenerates the model when topology
-changes, in 3.1 ms against a 40 s budget (F#8, F#31), with the regenerated model
+changes, in 3.1 ms against a 40 s budget, with the regenerated model
 matching a hand-coded reference to machine precision. This is the barrier the
 digital-twin literature treats as definitional, that changing topology means
 regenerating and re-initializing an offline model, reduced to an implementation
@@ -440,7 +440,7 @@ precisely on the gate manifolds a topology change creates; and the degraded-mode
 integration ladder engages on the small minority of steps that sit at parameter
 discontinuities, so the common case pays no robustness tax.
 
-Detection closes the engine inventory. Over the full library the hybrid detector
+Detection closes the engine inventory (Figure 2). Over the full library the hybrid detector
 misses nothing: a 0% miss rate in every disruption category, with median detection
 delays of 0.5 h for step-class disruptions (the floor imposed by the 0.5 h
 observation grid), 2.5 h for slow-ramp supply declines, and 3.0 h for combined
@@ -472,7 +472,7 @@ On the second question, the answer is parity. In-distribution, the graph-attenti
 screen reaches R² = 0.644 ± 0.177 on scenario-disjoint folds against the flat
 gradient-boosted baseline's 0.623 ± 0.159 on identical features, seed-stable
 across retraining. Relational structure adds nothing a flat model cannot extract
-at this data scale (F#14). Parity is itself informative: it says the value signal
+at this data scale. Parity is itself informative: it says the value signal
 at this scale lives in the features, not in the message-passing topology, which
 foreshadows the third answer.
 
@@ -481,8 +481,8 @@ capability that would justify a graph model over a tabular one. Across a
 generalization-onset sweep (training on option subsets of size k ∈ {3,4,5,6},
 testing transfer to held-out options, both models paired on identical splits),
 **no model generalizes, and the graph model degrades monotonically with option
-diversity**: median transfer R² negative at every k, never exceeding the flat
-baseline, with no rank signal (Spearman ρ ≈ 0) (F#15, F#18, F#30). The mechanism,
+diversity** (Figure 3): median transfer R² negative at every k, never exceeding the flat
+baseline, with no rank signal (Spearman ρ ≈ 0). The mechanism,
 established by an option-identity-blind control, is that the change descriptor
 encodes option *identity* rather than option *physics*; descriptive edge features
 help a tree model split on them but are diluted through message passing at ~10³-
@@ -506,7 +506,7 @@ sequence is itself a result. Against a passive static twin the recurrent loop
 scores ΔR = 0.190 [0.169, 0.211], *above* the one-shot perfect-foresight oracle
 (0.187): recurrence with reversibility beats one-shot optimality, because the loop
 composes reconfigurations sequentially and unwinds errors as the disruption
-reveals itself (F#19). This inversion, imperfect information applied repeatedly
+reveals itself. This inversion, imperfect information applied repeatedly
 outperforming perfect information applied once, is, to our knowledge, unreported
 in the digital-twin evaluation literature and is the paper's central conceptual
 finding.
@@ -516,14 +516,15 @@ strong static policy produced a *formal false negative* (ΔR = 0.117 [0.093,
 0.142]), but against an RDT arm running an inferior continuous policy with
 pre-burned buffers. Restoring arm symmetry (both arms on the winning continuous
 schedule; the static comparator retaining an oracle-onset advantage) gave ΔR =
-0.241 [0.215, 0.267] (F#21). The lesson generalizes: **comparator strength without
+0.241 [0.215, 0.267]; Figure 4 traces the full hardening sequence. The lesson generalizes: **comparator strength without
 arm symmetry produces false negatives** in prescriptive-twin evaluation; the
 0.117 would have wrongly rejected the effect.
 
 At full scale, across 2,000 pre-registered paired runs with hybrid detection gating both the
 continuous-regime switch and topology decisions, ΔR = 0.2438, 95% CI [0.2368,
-0.2511], Wilcoxon p ≈ 10⁻³¹⁰. The category structure beneath the pooled number is
-where the mechanism shows. Supply interruptions gain 0.306, utility outages 0.255,
+0.2511] (Figure 5), Wilcoxon signed-rank p < 10⁻³⁰⁰. The category structure beneath the pooled number is
+where the mechanism shows, and representative paired recovery trajectories are
+given in Figure 6. Supply interruptions gain 0.306, utility outages 0.255,
 combined events 0.275, and single-unit failures 0.140. The weakest stratum is
 diagnostic rather than embarrassing: unit failures are the most *schedulable*
 disruption class, the one a strong static policy handles best on its own, so
@@ -559,7 +560,7 @@ literature, and it falls out of the closed-loop evaluation for free. A final obj
 controller: the clairvoyant two-regime envelope max(V_slow, V_fast) upper-bounds
 any causal continuous controller over the draw-regime action set, and is a genuine
 strengthening (R = 0.666 vs the realized static 0.637). The RDT clears it with
-**ΔR = 0.294 [0.286, 0.302]** (F#34), a margin *exceeding* the headline, because
+**ΔR = 0.294 [0.286, 0.302]**, a margin *exceeding* the headline, because
 a stronger continuous baseline widens rather than narrows the gap: topology
 adaptation accesses rerouting and product-slate value that no draw-rate policy can
 reach. The residual, a continuous draw-rate-modulation controller, is not
@@ -571,7 +572,7 @@ The frozen analysis plan predicted an inverted-U dose–response (resilience gai
 peaking at intermediate severity). Its *absence* in the frozen output was the
 anomaly that exposed an unrealistic modeling assumption: an uncapped purchased-
 input market that, at extreme regional disruption, sourced replacement feedstock
-from a market the same disruption had struck (F#25). Introducing a market-
+from a market the same disruption had struck. Introducing a market-
 availability parameter φ recovered a physically sensible plateau and established a
 reporting rule whereby the supply-sensitive categories' gains are reported as a function
 of φ, not a scalar. Pre-registration here caught a *model* artifact, not analyst
@@ -679,7 +680,7 @@ work.
 **Real-time budget.** Compute time is met with orders-of-magnitude margin, but
 this is a compute-latency result: the deployed end-to-end cycle at production
 sampling rates was not tested (the simulation grid floors it) and is future work.
-We report H-level cycle compliance as *not tested at production conditions* rather
+We report the cycle-time requirement as *not tested at production conditions* rather
 than met, to keep the claim precise.
 
 **Limitations.** Four boundaries on the claims deserve statement in the authors'
@@ -767,8 +768,9 @@ not load-bearing for the methodological claims of this paper. The economic case 
 developed, with verified parameters, in the companion paper.
 
 ---
-*Figures (6): F0 architecture schematic (the four-engine recurrent loop); F1
-headline ΔR by category with φ-robustness; F7 comparator-hardening waterfall; F9
-N2 generalization-onset (two-panel, median with rank-signal); a recovery-curve
-exemplar (from F5); the detection performance summary (from F6). Companion Paper 2
-carries F2–F4 (φ-curve, dose–response, TTR) and the economic figures.*
+*Figures (6), journal order with repo sources: Figure 1 architecture schematic
+(repo F0); Figure 2 detection performance (F6); Figure 3 generalization-onset,
+two-panel median with rank signal (F9); Figure 4 comparator-hardening waterfall (F7); Figure 5 headline ΔR by category
+with φ-robustness (F1); Figure 6 paired
+recovery-curve exemplars (F5). Companion Paper 2 carries the φ-curve,
+dose–response, TTR, and economic figures (repo F2–F4).*
