@@ -618,6 +618,56 @@ stock-accumulation hours. The cost of detection latency is a property of the pol
 it gates, not of the detector, a coupling absent from the detection literature's
 delay-minimization framing.
 
+**What the evaluation protocol contributes.** Three protocol-level results emerged
+from this study that we believe transfer to any evaluation of a prescriptive
+system against a baseline, and we state them as candidate norms rather than as
+observations peculiar to one plant.
+
+The first is that *comparator strength without arm symmetry produces false
+negatives*. The instinct when hardening an evaluation is to make the baseline as
+strong as possible, and the instinct is correct but incomplete: when we granted
+the static comparator an oracle-scheduled continuous policy while the reactive arm
+ran an inferior one, the measured effect collapsed to 0.117 and the confidence
+interval would have rejected a hypothesis that is, on symmetric arms, true with
+enormous margin. Every non-topological improvement granted to the baseline must be
+granted to the treated arm, or the comparison measures the difference in
+continuous policies rather than the value of the treatment. We suspect this trap
+has claimed published negative results in other prescriptive-system evaluations,
+because nothing about it announces itself; the asymmetric number looks like an
+honest hard-won result.
+
+The second is the *recurrent-versus-oracle diagnostic*. Any closed-loop system can
+be compared against its own one-shot perfect-foresight oracle at negligible cost,
+and the comparison answers a question that raw effect sizes cannot: whether
+recurrence is contributing anything. A loop that cannot beat its own oracle is an
+expensive way of making a single decision, and its architecture should be
+simplified. The loop studied here beats its oracle, 0.190 against 0.187, which is
+the empirical license for its complexity.
+
+The third is that *pre-registration catches model artifacts, not only analyst
+bias*. The usual argument for pre-registration assumes an analyst tempted to tune
+endpoints after seeing data. Our frozen analysis caught something different: a
+committed prediction (an inverted-U dose-response) whose absence in the frozen
+output flagged an unphysical modeling assumption before any reviewer could. The
+uncapped purchase market was not a statistical choice; it was a model error that a
+post-hoc analysis would likely have rationalized. In simulation-based studies,
+where the analyst and the modeler are the same person and the data are infinitely
+regenerable, this failure mode is arguably the dominant one, and pre-registration
+is its cheapest known detector.
+
+**The architectural claim, restated.** The digital-twin literature treats fixed
+topology as definitional partly because the alternative appears to require
+regenerating and re-initializing an offline model, an operation associated with
+minutes to hours of engineering effort. The measured recompilation cost of 3.1 ms
+against a 40 s budget says the association is historical, not fundamental. Once
+the plant model is compiled *from* a graph object rather than *as* code, topology
+becomes state, and everything downstream (constraint generation, screening
+features, the MILP's decision space) inherits that mutability automatically. We
+regard this as the paper's most portable engineering lesson: the barrier to
+reactive twins was never physics or optimization, it was a representation choice,
+and it is one that any group building a prescriptive twin today can make
+differently at design time for almost nothing.
+
 **The negative result, honestly.** The graph model does not generalize to unseen
 reconfigurations at reachable scale. We neither hide this nor let it block the
 system: the architecture's layering is precisely what decouples system performance
@@ -632,22 +682,73 @@ sampling rates was not tested (the simulation grid floors it) and is future work
 We report H-level cycle compliance as *not tested at production conditions* rather
 than met, to keep the claim precise.
 
+**Limitations.** Four boundaries on the claims deserve statement in the authors'
+own words rather than a reviewer's. First, every number in this paper derives from
+a physics forward-model simulator; no real plant data enters any result, every
+dataset row carries a synthetic-data marker, and the strongest available
+mitigations (a hardened symmetric comparator, pre-registration, common random
+numbers, a public reproducibility harness) are mitigations, not substitutes for a
+plant trial. Second, the continuous-control objection is bounded, not closed: the
+clairvoyant envelope dominates any causal controller over the slow and fast draw
+regimes, but a controller with continuous draw-rate modulation lies outside that
+action set and remains untested. Given that the bounded gap already exceeds the
+headline effect, we expect the residual to be small, but expectation is not
+measurement. Third, the demonstration covers seven reconfiguration options on one
+plant archetype; the options were chosen to span the value classes the screen must
+learn, and the auto-derivation makes extension mechanical, but breadth claims are
+bounded by what was run. Fourth, the economic figures are indicative by
+construction, resting on planning-grade prices and disruption frequencies that a
+provenance ledger tracks as unverified; the machinery that enforces this,
+a parameter registry whose strict gate fails while any figure is uncited, is part
+of the released framework, and the verified economic case is the companion paper's
+burden.
+
+**Future work.** Ordered by expected value per unit effort: coupling market
+availability to disruption severity, a one-parameter scenario-model change that
+simultaneously hardens the supply-category tails and tests the pre-registered
+inverted-U at realistic conditions; integrating duration estimates (repair-crew
+ETA, failure-mode classification) into the screen, which targets the measured
+0.245 information gap directly and is an instrumentation project rather than a
+research one; the continuous-modulation comparator that closes the last baseline
+residual; a 10⁴–10⁵ option-scenario library to extend the generalization-onset
+curve into the regime where the graph model's scale floor is either confirmed or
+broken; and hardware-in-the-loop latency measurement on the path to a plant
+pilot.
+
 ## 6. Conclusions
 
-We presented the first digital twin that reconfigures its own process-network
-topology in real time, enabled by treating the model graph as a runtime data
-structure (3.1 ms recompilation) and by a layered screen–select–verify pipeline
-whose MILP constraints are auto-derived from graph structure. On a physics-based
-coconut-processing case study under pre-registered evaluation, runtime
-reconfiguration improved a 72-hour resilience integral by ΔR = 0.244 [0.237,
-0.251], widening to 0.294 against a clairvoyant continuous-control bound; the
-advantage is topological, not a continuous-control artifact. We reported, against
-interest, that graph-attention screening does not generalize to unseen
-reconfigurations at the data scale examined, and that the layered architecture
-makes this non-blocking. The framework, disruption library, and analysis pipeline
-are released open-source with a one-command reproducibility harness. The
-resilience-quantification and economic-impact results appear in the companion
-paper.
+This paper set out to remove an assumption so embedded in the digital-twin
+literature that it is rarely stated: that the topology of a process plant is a
+constant of the model rather than a variable of the operation. The removal turned
+out to be cheap. Compiled from a graph object instead of written as code, the
+plant model recompiles in 3.1 ms, and topology becomes something the twin can
+decide about, screened by a learned surrogate, selected by a mixed-integer program
+whose constraints derive from the graph itself, and verified against the
+differential-algebraic transient before anything is applied.
+
+What the removal is worth was measured, not asserted. Across 2,000 pre-registered
+paired scenarios on a physics-based coconut-processing complex, runtime
+reconfiguration improved the 72-hour resilience integral by ΔR = 0.244 [0.237,
+0.251] over a strong symmetric static comparator, and by 0.294 [0.286, 0.302]
+over a clairvoyant bound that dominates any continuous controller on the same
+action set. The second number matters more than the first: a stronger continuous
+baseline widened the gap rather than closing it, which is what it looks like when
+an advantage is genuinely topological. Along the way the evaluation produced three
+protocol results we believe outlive the case study (comparator symmetry,
+the recurrent-versus-oracle diagnostic, pre-registration as a model-artifact
+detector), one counterintuitive coupling (detection delay that pays for itself
+under a hoarding policy), and one negative reported against interest: graph
+attention does not transfer to unseen reconfigurations at the data scale reachable
+here, and the layered architecture is what makes that finding survivable rather
+than fatal.
+
+The framework, disruption library, trained-screen recipe, and analysis pipeline
+are released open-source behind a one-command reproducibility harness, and the
+resilience-quantification and economic results are developed in the companion
+paper. The claim this paper stands on is narrower and, we think, durable: a
+digital twin that can follow its plant through a reconfiguration is an
+implementation choice available today, and a twin that cannot is leaving its most
+valuable decisions on the table at exactly the moment they matter.
 
 ## Data and code availability
 
@@ -666,8 +767,8 @@ not load-bearing for the methodological claims of this paper. The economic case 
 developed, with verified parameters, in the companion paper.
 
 ---
-*Figures (6): F1 headline ΔR by category with φ-robustness; F7 comparator-
-hardening waterfall; F9 N2 generalization-onset (two-panel); a framework schematic
-(new, TODO); a recovery-curve exemplar (from F5); the detection ROC/delay (from
-F6). Companion Paper 2 carries F2–F4 (φ-curve, dose–response, TTR) and the
-economic figures.*
+*Figures (6): F0 architecture schematic (the four-engine recurrent loop); F1
+headline ΔR by category with φ-robustness; F7 comparator-hardening waterfall; F9
+N2 generalization-onset (two-panel, median with rank-signal); a recovery-curve
+exemplar (from F5); the detection performance summary (from F6). Companion Paper 2
+carries F2–F4 (φ-curve, dose–response, TTR) and the economic figures.*
