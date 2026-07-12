@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+title: "Reactive Digital Twin: runtime topology reconfiguration for chemical process networks"
+message: "If you use this software or its results, please cite the associated manuscript."
+type: software
+authors:
+  - family-names: Busico
+    given-names: Bien
+    orcid: "https://orcid.org/0009-0006-7755-2470"
+    affiliation: "Mapúa Malayan Colleges Mindanao"
+repository-code: "https://github.com/beebzy-droid/rdt-thesis3"
+license: MIT
+year: 2026
+preferred-citation:
+  type: article
+  title: "A Reactive Digital Twin: Graph-Attention Screening and Real-Time MILP for Runtime Topology Reconfiguration of Chemical Process Networks"
+  authors:
+    - family-names: Busico
+      given-names: Bien
+      orcid: "https://orcid.org/0009-0006-7755-2470"
+  journal: "Computers and Chemical Engineering"
+  notes: "Manuscript CACE-D-26-01164, under review"
+  year: 2026

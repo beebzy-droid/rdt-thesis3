@@ -1,51 +1,133 @@
-# RDT — Reactive Digital Twin (MS Thesis III, UP Diliman ChE)
+# Reactive Digital Twin (RDT)
 
-Reactive Digital Twin with GNN-guided topology reconfiguration and MILP
-optimization for resilient Philippine coconut processing complex operations
-under supply chain disruption.
+**Runtime topology reconfiguration for chemical process networks under disruption.**
 
-**Status: Week 1–5 infrastructure. All gates PASS.**
+A digital twin that reconfigures its own process-network topology in real time,
+coupling four engines in a recurrent loop: Bayesian online change-point detection,
+a graph-attention screen over candidate rewirings, a MILP selector whose constraints
+are auto-derived from the process graph, and a differential-algebraic model that
+verifies each reconfiguration is dynamically reachable.
 
-| Gate | Criterion | Measured |
-|---|---|---|
-| R1 operator-splitting vs analytical | rel. err < 1e-3 | ~1e-15 |
-| Structural filter discrimination | valid ✓ / broken ✗ | correct |
-| HiGHS MILP latency, K=50 | < 5 s | 4.7 ms |
-| Determinism (CRN prerequisite) | bit-identical | True |
+> **Status:** Manuscript **CACE-D-26-01164** submitted to *Computers & Chemical
+> Engineering* (July 2026), under editorial consideration. This repository is the
+> complete reproducibility package for that paper.
+
+---
+
+## The result in one table
+
+Across 2,000 pre-registered paired Monte-Carlo scenarios on a physics-based model of
+an integrated coconut processing complex:
+
+| Endpoint | Target | Measured | |
+|---|---|---|---|
+| Resilience gain ΔR (72 h integral) | ≥ 0.15 | **0.244** [0.237, 0.251] | pass |
+| ΔR vs clairvoyant continuous-control bound | > 0 | **0.294** [0.286, 0.302] | pass |
+| Time-to-80%-recovery reduction | ≥ 30% | **57.7%** [55.2, 60.2] | pass |
+| Safety-class constraint violations | 0 | **0** / 2,000 | pass |
+| MILP selection latency | < 5 s | **4.7 ms** | pass |
+| Topology recompilation | < 40 s | **3.1 ms** | pass |
+
+The clairvoyant bound is the load-bearing number. An *optimistic* upper bound on any
+continuous controller over the same action set scores R = 0.666, against the realized
+static baseline's 0.637, and the RDT still beats it by a margin *wider* than the
+headline. A stronger continuous comparator widens the gap rather than closing it,
+which is what it looks like when an advantage is genuinely topological.
+
+**One negative result, reported against interest.** Graph-attention screening does
+**not** generalize to unseen reconfigurations at the data scale reachable here.
+Transfer R² is negative at every training-diversity level and degrades monotonically
+as diversity grows; a flat gradient-boosted baseline beats it everywhere; rank
+correlation is approximately zero. The layered architecture is what makes this
+non-blocking. Reproduce it with `python scripts/train_gat_pyg.py --mode onset`. It is
+offered as a documented scale floor and a baseline to beat.
+
+---
+
+## Reproduce everything
+
+```bash
+pip install -r requirements.txt
+python scripts/reproduce.py        # screen rebuild + provenance gate + all figures
+python -m pytest tests/ -q         # 36 gates
+```
+
+`reproduce.py` is determinism-gated. It rebuilds the gradient-boosted screen from its
+training recipe twice and asserts byte-identical predictions; if an environment cannot
+reproduce that, it fails loudly rather than producing subtly different numbers. No
+model binary is committed, because a pickled model is version-fragile across library
+releases.
+
+Full campaign from scratch (about 10 minutes on 12 cores):
+
+```bash
+python scripts/campaign.py          --cats D1,D3,D4,D8 --n 500 --workers 12
+python scripts/campaign_a1_ttr.py   --cats D1,D3,D4,D8 --n 500 --workers 12
+python scripts/clairvoyant_bound.py --cats D1,D3,D4,D8 --n 500 --workers 12
+python scripts/train_gat_pyg.py     --mode onset
+python scripts/analysis_prereg.py   # frozen endpoints
+python scripts/make_figures.py      # F1-F9
+python scripts/make_schematic.py    # F0 architecture schematic
+```
+
+Windows: `make.bat <target>` mirrors the Makefile (`test`, `screen`, `figures`,
+`reproduce`, `campaign`).
+
+---
 
 ## Layout
-- `rdt_core/graph.py` — process graph, structural feasibility filter
-  (**§2.4.1 amendment**: scalar-incidence rank condition proven vacuous at the
-  week-0 gate; degree/reachability filter implemented instead — see docstring)
-- `rdt_core/icpc_graph.py` — ICPC G_max superstructure, single source of truth
-  (|V|=25, 30 nominal + 10 candidate edges, seed exclusion pairs)
-- `rdt_core/toy_flowsheet.py` — 3-unit analytical DAE (Risk R1 gate)
-- `rdt_core/sim.py` — SimPy ⊕ CasADi operator-splitting driver
-- `data/g_max.json` — frozen graph of record (v0.1.0-seed)
-- `scripts/gate_r1.py` — reproduces every number above
-- `tests/` — CI-enforced gate assertions
 
-## Run
+| Path | Contents |
+|---|---|
+| `rdt_core/graph.py`, `icpc_graph.py` | Process graph, superstructure, structural feasibility filter |
+| `rdt_core/compiler.py` | Graph-to-DAE compiler (3.1 ms; matches a hand-coded reference to 1e-14) |
+| `rdt_core/plant_dae.py` | Index-1 DAE plant model |
+| `rdt_core/bocpd.py` | Hybrid BOCPD + CUSUM detector |
+| `rdt_core/gat_jax.py`, `gnn.py` | Graph-attention screen |
+| `rdt_core/milp.py` | MILP selector (HiGHS); constraints auto-derived from the graph |
+| `rdt_core/loop.py` | The recurrent closed loop |
+| `rdt_core/disruptions.py` | Eight disruption categories, Latin-hypercube sampled |
+| `scripts/` | Campaigns, analyses, figures, reproducibility harness |
+| `tests/` | 36 CI-enforced gates |
+| `thesis/` | Manuscript source, chapters, validated bibliography |
+| `provenance.yaml` | Parameter ledger: every value, its named source, its verification status |
+
+---
+
+## Data provenance and honest limits
+
+**All data here are synthetic**, generated by the physics forward model and marked as
+such at the row level. No proprietary or operational plant data were used.
+
+**Economic figures are indicative, not verified.** `provenance.yaml` tracks 30
+parameters, and `python scripts/check_provenance.py --strict` **fails by design**:
+prices and disruption frequencies are planning-grade values pending verification
+against public Philippine sources (PCA, PSA, ERC/NGCP, PAGASA). No unverified number
+is load-bearing for the methodological claims of the submitted paper. The verified
+economic case is follow-on work.
+
+The failing strict gate is the enforcement mechanism, not a defect. A number becomes
+citable only when its provenance entry carries a real source.
+
+---
+
+## Citation
+
+```bibtex
+@article{busico2026rdt,
+  author = {Busico, Bien},
+  title  = {A Reactive Digital Twin: Graph-Attention Screening and Real-Time MILP
+            for Runtime Topology Reconfiguration of Chemical Process Networks},
+  note   = {Manuscript CACE-D-26-01164, under review at Computers and Chemical Engineering},
+  year   = {2026}
+}
 ```
-pip install -r requirements.txt pytest
-python -m pytest tests/ -v
-python scripts/gate_r1.py
-```
 
-## Integrity rules (lifecycle doc §9.2)
-No fabricated/unverified data — [est.]/[verify] flags in code comments are
-binding. No silent metric substitution — acceptance criteria are frozen;
-changes are documented amendments.
+## License
 
-## Reproducing results
+MIT. See `LICENSE`.
 
-Cross-platform entry point (no GNU make required):
+## Author
 
-    python scripts/reproduce.py          # rebuild screen + provenance + figures
-    python -m pytest tests/ -q           # 34 gates
-
-Convenience wrappers: `make <target>` (Linux/macOS) or `make.bat <target>`
-(Windows) — targets: env, gpu, test, screen, provenance, figures, reproduce,
-campaign. The GBT screen is rebuilt deterministically from its recipe; no model
-binary is committed (sklearn-version portability). Full H4/H5 campaign:
-`python scripts/campaign.py --cats D1,D3,D4,D8 --n 500 --workers 12`.
+Bien Busico · [ORCID 0009-0006-7755-2470](https://orcid.org/0009-0006-7755-2470)
+Mapúa Malayan Colleges Mindanao, Davao City, Philippines

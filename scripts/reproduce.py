@@ -69,7 +69,14 @@ def main():
         run("check_provenance.py")
     if a.figures or do_all:
         print("[3/3] regenerating figures")
+        # The N2 onset curve (Figure 3) needs data/n2_onset.csv. It is committed,
+        # so figures render from a clean clone without a GPU run; regenerate it
+        # with `python scripts/train_gat_pyg.py --mode onset` (deterministic).
+        if not pathlib.Path("data/n2_onset.csv").exists():
+            print("  note: data/n2_onset.csv absent; Figure 3 (N2 onset) will be "
+                  "skipped. Regenerate with: python scripts/train_gat_pyg.py --mode onset")
         run("make_figures.py")
+        run("make_schematic.py")
     print("reproduce: OK")
 
 
