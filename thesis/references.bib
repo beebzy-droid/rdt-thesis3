@@ -225,3 +225,235 @@
 %   and "topology," but at different granularities and with different engines.
 %   The Introduction MUST cite this and state the distinction explicitly; a
 %   reviewer who knows this paper will look for exactly that paragraph.
+
+% ============================================================================
+% CROSS-DOMAIN RECONFIGURATION LITERATURE (added 2026-07-13)
+%
+% Added after the CACE desk-rejection on novelty grounds. The rejection is
+% attributed to an uncited adjacent literature: online topology reconfiguration
+% is mature in power systems and has recently been done with graph attention.
+% These entries let the manuscript credit that work and then draw the boundary
+% (transition time tau -> 0 there, tau ~ D here; see Corollary 2 of
+% thesis/theory_transition_dynamics.md).
+%
+% VERIFICATION STATUS is recorded per entry:
+%   [CONFIRMED]  front matter read directly from the publisher page
+%   [VERIFY]     citation assembled from secondary listings; check page/DOI
+%                against the publisher record before submission
+% ============================================================================
+
+@article{guo2025gatddpg,
+  author  = {Guo, Chen and Jiang, Changxu and Liu, Chenxi},
+  title   = {Dynamic Reconfiguration Method of Active Distribution Networks Based on Graph Attention Network Reinforcement Learning},
+  journal = {Energies},
+  volume  = {18},
+  number  = {8},
+  pages   = {2080},
+  year    = {2025},
+  doi     = {10.3390/en18082080},
+  note    = {[CONFIRMED: publisher page read 2026-07-13. Fuzhou University;
+             submitted 4 Mar 2025, published 17 Apr 2025.] MOST ACUTE PRIOR ART
+             for the graph-attention component. GATDDPG: graph attention as the
+             actor-critic function approximator inside DDPG, solving active
+             distribution network dynamic reconfiguration on an enhanced IEEE
+             33-bus system. DISTINCTION (verified against the full text): its
+             objective is network loss plus voltage deviation under normal
+             operation, not disruption response; "dynamic" means 24 hourly
+             snapshots (their T = 24 h, 1 h per step), not a continuous
+             transient; switching cost is a COUNT of breaker operations
+             (their Eq. 12) with no time dimension; the GAT is an end-to-end
+             learned policy, not a screening surrogate feeding an exact
+             optimizer; and there is no reachability verification of any kind.}
+}
+
+@article{baran1989reconfiguration,
+  author  = {Baran, Mesut E. and Wu, Felix F.},
+  title   = {Network Reconfiguration in Distribution Systems for Loss Reduction and Load Balancing},
+  journal = {IEEE Transactions on Power Delivery},
+  volume  = {4},
+  number  = {2},
+  year    = {1989},
+  note    = {[VERIFY page range: listings differ, 1401--1407 vs 1401--1414.]
+             Seminal DNR formulation. Cited to credit the origin of online
+             topology reconfiguration.}
+}
+
+@article{mahdavi2021reconfiguration,
+  author  = {Mahdavi, Meisam and Alhelou, Hassan Haes and Hatziargyriou, Nikos D. and Jurado, Francisco},
+  title   = {Reconfiguration of Electric Power Distribution Systems: Comprehensive Review and Classification},
+  journal = {IEEE Access},
+  volume  = {9},
+  pages   = {118502--118527},
+  year    = {2021},
+  doi     = {10.1109/ACCESS.2021.3107475},
+  note    = {[VERIFY] Most-cited recent DNR survey; establishes the static
+             versus multi-period "dynamic" taxonomy the present work departs from.}
+}
+
+@article{fisher2008ots,
+  author  = {Fisher, Emily B. and O'Neill, Richard P. and Ferris, Michael C.},
+  title   = {Optimal Transmission Switching},
+  journal = {IEEE Transactions on Power Systems},
+  volume  = {23},
+  number  = {3},
+  pages   = {1346--1355},
+  year    = {2008},
+  note    = {[VERIFY] Foundational transmission topology control; switching
+             again instantaneous.}
+}
+
+@article{koren1999rms,
+  author  = {Koren, Yoram and Heisel, Uwe and Jovane, Francesco and Moriwaki, Toshimichi and Pritschow, Gunter and Ulsoy, Galip and Van Brussel, Hendrik},
+  title   = {Reconfigurable Manufacturing Systems},
+  journal = {CIRP Annals},
+  volume  = {48},
+  number  = {2},
+  pages   = {527--540},
+  year    = {1999},
+  doi     = {10.1016/S0007-8506(07)63232-6},
+  note    = {[VERIFY] Foundational RMS keynote. Closest neighbour that treats
+             reconfiguration time as decision-relevant, but at design and
+             capacity-planning timescales rather than as a real-time
+             reachability constraint during a live disruption.}
+}
+
+@article{swaney1985flexibility1,
+  author  = {Swaney, Ross E. and Grossmann, Ignacio E.},
+  title   = {An Index for Operational Flexibility in Chemical Process Design. Part I: Formulation and Theory},
+  journal = {AIChE Journal},
+  volume  = {31},
+  number  = {4},
+  pages   = {621--630},
+  year    = {1985},
+  doi     = {10.1002/aic.690310412},
+  note    = {[VERIFY] The flexibility index: can a fixed design operate across
+             an uncertainty set. Steady-state and design-time; the present work
+             asks whether a transition between designs is reachable in time.}
+}
+
+@article{grossmann1987activeconstraint,
+  author  = {Grossmann, Ignacio E. and Floudas, Christodoulos A.},
+  title   = {Active Constraint Strategy for Flexibility Analysis in Chemical Processes},
+  journal = {Computers and Chemical Engineering},
+  volume  = {11},
+  number  = {6},
+  pages   = {675--693},
+  year    = {1987},
+  note    = {[VERIFY]}
+}
+
+@article{vinson2000operability,
+  author  = {Vinson, David R. and Georgakis, Christos},
+  title   = {A New Measure of Process Output Controllability},
+  journal = {Journal of Process Control},
+  volume  = {10},
+  number  = {2--3},
+  pages   = {185--194},
+  year    = {2000},
+  note    = {[VERIFY] Operability framework. "Switchability" in this lineage
+             means moving between operating points of a FIXED flowsheet, not
+             changing the flowsheet graph.}
+}
+
+@article{cervantes2002gradetransition,
+  author  = {Cervantes, Arturo M. and Tonelli, Stella and Brandolin, Adriana and Bandoni, J. Alberto and Biegler, Lorenz T.},
+  title   = {Large-Scale Dynamic Optimization for Grade Transitions in a Low-Density Polyethylene Plant},
+  journal = {Computers and Chemical Engineering},
+  volume  = {26},
+  number  = {2},
+  pages   = {227--237},
+  year    = {2002},
+  note    = {[VERIFY] The PSE precedent for optimizing a costed transient
+             against a DAE model. Grade transitions move between operating
+             points; they do not choose the topology, and no breakeven against
+             a disruption duration is derived.}
+}
+
+@article{floresTlacuahuac2008grade,
+  author  = {Flores-Tlacuahuac, Antonio and Biegler, Lorenz T.},
+  title   = {Integrated Control and Process Design During Optimal Polymer Grade Transition Operations},
+  journal = {Computers and Chemical Engineering},
+  volume  = {32},
+  number  = {11},
+  year    = {2008},
+  note    = {[VERIFY page range]}
+}
+
+@article{mendez2006scheduling,
+  author  = {M{\'e}ndez, Carlos A. and Cerd{\'a}, Jaime and Grossmann, Ignacio E. and Harjunkoski, Iiro and Fahl, Marco},
+  title   = {State-of-the-Art Review of Optimization Methods for Short-Term Scheduling of Batch Processes},
+  journal = {Computers and Chemical Engineering},
+  volume  = {30},
+  number  = {6--7},
+  pages   = {913--946},
+  year    = {2006},
+  note    = {[VERIFY] Sequence-dependent changeover times and costs. Establishes
+             that "transitions consume capacity" is not itself novel in PSE,
+             which isolates the reachability gate as the contribution.}
+}
+
+@article{chrisandina2025cfri,
+  author  = {Chrisandina, Natasha J. and Iakovou, Eleftherios and Pistikopoulos, Efstratios N. and El-Halwagi, Mahmoud M.},
+  title   = {A Multi-Parametric Programming Approach for Combined Flexibility, Availability, and Resilience in Process Design},
+  journal = {Computers and Chemical Engineering},
+  volume  = {201},
+  pages   = {109198},
+  year    = {2025},
+  note    = {[VERIFY] NEAREST PSE PRIOR ART. Introduces the Combined
+             Flexibility-Resilience Index, the likelihood that a system is
+             feasible under an uncertainty and disruption set. Published in the
+             journal that desk-rejected the present manuscript, so the handling
+             editor is presumed familiar with this line. MUST be engaged
+             directly: CFRI is a design-time probability of feasibility; the
+             present work supplies the operational counterpart, a probability
+             that a disruption outlasts the reconfiguration breakeven.}
+}
+
+@article{chrisandina2024resilience,
+  author  = {Chrisandina, Natasha J. and Vedant, Shivam and Iakovou, Eleftherios and Pistikopoulos, Efstratios N. and El-Halwagi, Mahmoud M.},
+  title   = {Metrics and Methods for Resilience-Aware Design of Process Systems: Advances and Challenges},
+  journal = {Digital Chemical Engineering},
+  volume  = {43},
+  pages   = {100984},
+  year    = {2024},
+  note    = {[VERIFY volume: 43 appears inconsistent with a 2024 Digital
+             Chemical Engineering volume; check before submission.]}
+}
+
+@article{dixit1989entryexit,
+  author  = {Dixit, Avinash K.},
+  title   = {Entry and Exit Decisions Under Uncertainty},
+  journal = {Journal of Political Economy},
+  volume  = {97},
+  number  = {3},
+  pages   = {620--638},
+  year    = {1989},
+  doi     = {10.1086/261619},
+  note    = {[VERIFY] THE MATHEMATICAL COUSIN of the breakeven duration. Sunk
+             switching costs produce a band of inaction between trigger points
+             (hysteresis). D* is the physical-transition analogue: the inaction
+             band arises from the DURATION of the transition rather than from a
+             sunk financial cost, and is gated by dynamic reachability rather
+             than by price. Must be cited and distinguished.}
+}
+
+@book{dixit1994investment,
+  author    = {Dixit, Avinash K. and Pindyck, Robert S.},
+  title     = {Investment Under Uncertainty},
+  publisher = {Princeton University Press},
+  year      = {1994},
+  note      = {[VERIFY ISBN] Real-options lineage; the option to defer
+               reconfiguration has value.}
+}
+
+@article{zlotnik2015gastransient,
+  author  = {Zlotnik, Anatoly and Chertkov, Michael and Backhaus, Scott},
+  title   = {Optimal Control of Transient Flow in Natural Gas Networks},
+  booktitle = {IEEE Conference on Decision and Control (CDC)},
+  journal = {Proceedings of the IEEE Conference on Decision and Control},
+  year    = {2015},
+  doi     = {10.1109/CDC.2015.7402616},
+  note    = {[VERIFY] Closest physical analogue outside process engineering:
+             network optimization with genuine transients. The decision is
+             control of flow, not disruption-triggered topology change.}
+}

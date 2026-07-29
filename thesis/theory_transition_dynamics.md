@@ -208,6 +208,20 @@ sits above the median disruption. Under Corollary 2 an instantaneous-switching
 domain would place every option in the unconditional partition. The conditional
 partition is therefore the empirical signature of non-negligible transition time.
 
+**Sensitivity to the transition timescale.** Because $D^{*} = \tau + c/\gamma$
+depends on $\tau$ with unit slope, the theoretical prediction inherits whatever
+uncertainty attaches to the dryer residence time. The model uses 30 h as a
+mid-range value, but the authoritative Philippine figure, from the PCA Zamboanga
+Research Center mechanical dryer, is approximately 24 h, while small-holder
+indirect dryers run nearer 36 h. Taking the crude bypass as the test case, a
+forward plus return transition predicts $D^{*}$ near $2\tau$, giving 48 h at
+$\tau = 24$ h, 60 h at 30 h, and 72 h at 36 h, against an empirical estimate of
+51.0 h with a bootstrap interval of [31.4, 366.8]. All three lie inside the
+interval, and the authoritative 24 h figure gives the closest agreement, which is
+worth reporting because it favors the source we did not use. The parameter is
+recorded in the provenance ledger as a range rather than a point value, and no
+claim in this paper depends on resolving it.
+
 **An unplanned consistency check.** Two options, `copra_sale` and `shell_boiler`,
 return breakeven estimates that are numerically absurd (1,510 h and
 $-5\times10^{4}$ h) with intervals spanning zero. This is not noise: both have

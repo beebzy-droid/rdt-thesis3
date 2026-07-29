@@ -85,6 +85,8 @@ def main(strict=False):
         "y_refine": "y_refine", "y_char": "y_char",
         "cap_press": "cap_press", "cap_refine": "cap_refine",
         "I_crude_max": "I_crude_max",
+        "tau_dry": "tau_dry", "tau_buf": "tau_buf",
+        "tau_tank": "tau_tank", "tau_surge": "tau_surge",
     }
     drift = []
     for pv_name, attr in field_map.items():

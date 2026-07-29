@@ -132,6 +132,40 @@ parameters:
                source: "DERIVED from price vector × nominal flows",
                e11_weight: hi, note: "recomputes automatically when prices verified"}
 
+
+  # ---------------- TRANSITION TIMESCALES (theory-critical, added 2026-07-13) --
+  # These became load-bearing when the breakeven theory was derived: tau_k is
+  # the leading term of D*_k = tau_k + c_k/gamma_k, so the whole conditional
+  # structure of the result scales with them. They were previously untracked,
+  # which was a gap: a parameter that sets a headline result must be in the
+  # ledger. Priority is now Tier-1 alongside the E11 drivers.
+  tau_dry:
+    value: 30.0; unit: hr; status: verify; verified: false
+    source: "PCA-Zamboanga Research Center / DOST-PCAARRD mechanical copra dryer
+             (~24 h to 7-10% moisture, 3000 split nuts/batch) is the authoritative
+             Philippine figure; CPCRI/TNAU indirect dryer ~36 h; traditional sun
+             drying 4-7 days. Code value 30 h is a MID-RANGE choice between the
+             mechanical and small-holder figures and must be presented as a range
+             (24-36 h) with sensitivity, not as a point value."
+    e11_weight: hi
+    note: "THEORY-CRITICAL: dominant transition timescale; sets tau in D*.
+           The empirical crude_bypass breakeven (51 h) sits near 2x this value,
+           consistent with a forward plus return transition. A reviewer will
+           challenge a point value here; report 24-36 h and show D* sensitivity."
+  tau_buf:
+    value: 8.0; unit: hr; status: verify; verified: false
+    source: "buffer-vessel residence, plant design basis"
+    e11_weight: med
+    note: "secondary transition timescale"
+  tau_tank:
+    value: 6.0; unit: hr; status: verify; verified: false
+    source: "intermediate tank residence, plant design basis"
+    e11_weight: lo
+  tau_surge:
+    value: 2.0; unit: hr; status: verify; verified: false
+    source: "surge-drum residence, plant design basis"
+    e11_weight: lo
+
   # ---------------- detector / disruption calibration ------------------------
   D4_outage_range: {value: "0.5-72", unit: hr, status: verify, verified: false,
                     source: "DOE/NGCP interruption duration distribution",
