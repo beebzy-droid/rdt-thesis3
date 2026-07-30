@@ -232,6 +232,64 @@ options whose breakevens the data cannot pin down are exactly the options the
 theory says should be unidentifiable, which is a check the analysis was not
 designed to perform.
 
+## 5.1 A falsified prediction, and what it reveals about the model
+
+Proposition 1 makes a second, sharper prediction than the saturation result:
+because $D^{*} = \tau + c/\gamma$ depends on $\tau$ with unit slope, sweeping the
+dominant transition timescale should move every breakeven one hour per hour.
+`scripts/tau_sweep.py` tests this by rebuilding the plant at
+$\tau_{\text{dry}} \in \{12, 18, 24, 30, 36, 48\}$ h and re-estimating each
+breakeven, over 960 option-scenario labels spanning two disruption categories and
+both the control-input and topology-activation option families.
+
+**The prediction fails.** Measured slopes are:
+
+| Option | family | $dD^{*}/d\tau$ | 95% CI |
+|---|---|---|---|
+| solar_train | topology (adds dryer compartments) | $-0.01$ | $[-0.03,\,-0.01]$ |
+| nut_sale | topology | $0.00$ | $[0.00,\,0.00]$ |
+| crude_bypass | control input | $+0.09$ | $[0.05,\,0.16]$ |
+| wet_route | control input | $0.00$ | $[0.00,\,0.00]$ |
+| copra_buy | control input | $-0.03$ | $[-0.05,\,0.00]$ |
+
+against a predicted $1.00$. The breakevens are essentially independent of the
+dryer residence time, and this holds even for `solar_train`, whose reconfiguration
+activates five additional dryer compartments and whose transition should therefore
+be residence-gated.
+
+**The cause is the re-initialization contract, not the theory.** When a topology
+change activates new units, the state remap of `warm_start_map` assigns new
+states from a defaults dictionary, and the topology label generator supplies
+inlet moisture for the new dryer compartments. Newly activated vessels are
+therefore born already filled with material at inlet condition, and begin
+contributing output as soon as flow reaches them. The effective transition time is
+set by how quickly flow redistributes, on the order of hours, and not by the
+residence time of the vessels being brought online, on the order of a day. With
+$\tau_{\text{effective}}$ decoupled from $\tau_{\text{dry}}$, the sweep cannot
+move the quantity it is trying to move.
+
+**The consequence is uncomfortable and must be stated plainly.** In its present
+form the simulator represents reconfiguration as nearly instantaneous, which is
+the regime Corollary 2 attributes to power distribution networks. The economic
+component of the breakeven, $c/\gamma$, is real and is what the estimates of
+Section 5 measure: `crude_bypass` remains net harmful on short disruptions
+because it surrenders the refined-product premium, and that is an economic
+threshold, not a transition-time one. But the transition-time component of the
+theory, which is the part that distinguishes this work from the network
+reconfiguration literature, **is not demonstrated by the current model.**
+
+Two things follow. First, any claim that transition dynamics bind must wait on a
+cold-start re-initialization contract in which newly activated units begin empty
+or at ambient condition and must fill and reach a steady profile before
+contributing, making the transition genuinely residence-gated. That is a
+well-defined modeling change and it is the next experiment, not a limitation to be
+argued around. Second, the requirement itself is a finding worth reporting: a
+digital twin that hot-starts newly activated units will systematically
+underestimate the cost of reconfiguring, and will therefore recommend
+reconfigurations that a real plant would not survive. Model fidelity in the
+re-initialization contract is not a numerical detail; it determines whether the
+decision the twin recommends is the right one.
+
 ## 6. The regional design criterion
 
 Proposition 3 makes the value of a reconfiguration capability an explicit product
