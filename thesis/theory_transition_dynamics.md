@@ -424,6 +424,45 @@ specific reconfiguration in a real facility genuinely requires breaking its
 current route before the replacement is available, in which case it is physics and
 belongs in the model on its own merits.
 
+## 5.4 A first test of the revised mechanism, and a better estimator
+
+The constraint-activation mechanism of Section 5.3 makes its own falsifiable
+prediction, and it is a different one from the transition story it replaces. If
+the breakeven is governed by when the relieved constraint binds, and that binding
+time is set by how long the buffer takes to fill, then $D^{*}$ must scale with
+buffer capacity. In this plant the crude tank is the relevant buffer: a full tank
+throttles the press through the `gate_tank` term, and the crude bypass exists
+precisely to drain it.
+
+Sweeping $I_{\text{crude,max}}$ over $\{12.5, 25, 50, 100, 200\}$ tonnes gives
+breakevens of 19.5, 93.1, 80.5, unidentified, and 80.2 h. The effect at the small
+end is real and in the predicted direction: a tank a quarter of nominal size binds
+much sooner, and the breakeven falls to roughly a fifth of its value elsewhere.
+Above 25 tonnes the estimates flatten near 80 h rather than continuing to rise,
+which the mechanism does not by itself explain. The most likely reason is that
+beyond that capacity the tank does not fill within the 72 h evaluation window for
+the sampled disruption severities, so the constraint never binds and the
+comparison is no longer measuring what the sweep intends. That is a testable
+conjecture and it is not tested here.
+
+**The honest status is preliminary.** The sweep uses a single disruption category
+and 60 scenarios per cell, one cell is unidentified, and the saturation is
+uncharacterized. It is directional support, not confirmation. A proper test needs
+the full category set, several hundred scenarios per cell, and capacities chosen
+so that the binding time sits inside the evaluation window across the sweep.
+
+**A methodological byproduct worth keeping.** The ratio estimator
+$\hat{D}^{*} = -\hat{\beta}_0/\hat{\beta}_1$ divides by a fitted slope and
+becomes unstable whenever the rescue margin is weak. On the first pass of this
+sweep it returned 495 h and $-650$ h on adjacent cells, which is not a result but
+an artifact of the denominator. Replacing it with the 50% crossing of a logistic
+fit to $\Pr(\Delta R > 0 \mid D)$ removes the instability, because the crossing
+depends on the ordering of outcomes rather than their magnitudes. All breakevens
+reported from this point use the logistic estimator, and the earlier ratio
+estimates should be read as indicative only. This also explains, in retrospect,
+the unidentifiable entries of Section 5: they were the cells where the denominator
+was closest to zero.
+
 ## 6. The regional design criterion
 
 Proposition 3 makes the value of a reconfiguration capability an explicit product

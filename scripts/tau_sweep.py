@@ -85,7 +85,8 @@ def run_cell(job):
     """One (tau, category) cell. Self-contained so it survives spawn."""
     tau, cat, n_scen, path, cold = job
     OUT.mkdir(parents=True, exist_ok=True)
-    tag = ("crudecom" if path == "crude" else ("cold" if cold else "hot"))
+    tag = ("cap" if path == "capacity" else
+           "crudecom" if path == "crude" else ("cold" if cold else "hot"))
     out = OUT / f"tau{tau:05.1f}_{cat}_{path}_{tag}.parquet"
     if out.exists():
         return f"tau={tau:5.1f} {cat} skip (exists)"
@@ -96,7 +97,13 @@ def run_cell(job):
     gp = _load_gen_pilot()
 
     # tau enters ONLY through the plant parameters; everything downstream is rebuilt
-    if path == "crude":
+    if path == "capacity":
+        # Sweep the CRUDE TANK CAPACITY. Under the revised mechanism (theory
+        # Section 5.3) the breakeven is set by when the relieved constraint binds,
+        # D_bind ~ I_crude_max / (net fill rate), so D* should scale with capacity.
+        # This is the falsifiable test the transition-time story never passed.
+        p = PlantParams(I_crude_max=float(tau))
+    elif path == "crude":
         # Sweep the SUBSTITUTIVE option's own commissioning time constant. This
         # is the tau of Proposition 1 for that option; tau_dry is not, which is
         # why the earlier sweeps could not move the breakeven.
@@ -115,23 +122,35 @@ def run_cell(job):
         x0 = np.concatenate([x0, [0.0]])
     z0 = np.zeros(2)
 
-    rows, t0 = [], time.perf_counter()
+    rows, t0, skipped = [], time.perf_counter(), 0
     if path == "topology":
         return _run_topology_cell(tau, cat, n_scen, out, p, F0, t0, cold)
     for dp in sample(cat, n_scen, SEED0):
-        _, R0, _, _, V0 = gp.run_one(dp, p, intg, out_fn, F0, x0, z0)
-        opts = ({"crude_bypass": dict(u_crude=1.0)} if path == "crude"
-                else OPTIONS_CONTROL)
+        # IDACalcIC can fail when a scenario starts on a gate manifold. Skip that
+        # scenario rather than losing the cell, and report the rate: a high skip
+        # rate would mean the sweep is sampling a different population per cell
+        # and the comparison across cells would not be valid.
+        try:
+            _, R0, _, _, V0 = gp.run_one(dp, p, intg, out_fn, F0, x0, z0)
+        except RuntimeError:
+            skipped += 1
+            continue
+        opts = ({"crude_bypass": dict(u_crude=1.0)}
+                if path in ("crude", "capacity") else OPTIONS_CONTROL)
         for name, u in opts.items():
-            _, R1, _, _, _ = gp.run_one(dp, p, intg, out_fn, F0, x0, z0, **u)
+            try:
+                _, R1, _, _, _ = gp.run_one(dp, p, intg, out_fn, F0, x0, z0, **u)
+            except RuntimeError:
+                skipped += 1
+                continue
             rows.append(dict(tau_dry=float(tau), category=cat, seed=dp.seed,
                              severity=dp.severity, duration_hr=dp.duration_hr,
                              onset_hr=dp.onset_hr, option=name,
                              R_null=R0, R_opt=R1, dR=R1 - R0, V0_php_hr=V0,
                              data_class="SYNTHETIC/physics-forward-model"))
     pd.DataFrame(rows).to_parquet(out, index=False)
-    return (f"tau={tau:5.1f} {cat} done {len(rows):4d} labels "
-            f"{time.perf_counter()-t0:5.0f}s")
+    return (f"sweep={tau:9.1f} {cat} done {len(rows):4d} labels "
+            f"({skipped} skipped) {time.perf_counter()-t0:5.0f}s")
 
 
 def _run_topology_cell(tau, cat, n_scen, out, p, F0, t0, cold=False):
@@ -181,6 +200,37 @@ def _run_topology_cell(tau, cat, n_scen, out, p, F0, t0, cold=False):
             f"{time.perf_counter()-t0:5.0f}s")
 
 
+def fit_dstar_logit(dur, dR, T=R_WIN):
+    """Robust breakeven: the duration at which the option becomes more likely than
+    not to help. Fits P(dR > 0) as a logistic in duration and returns the 50%
+    crossing.
+
+    This is preferred over the ratio estimator -intercept/slope, which divides by a
+    fitted slope and becomes unstable whenever the rescue margin is weak: that
+    instability produced estimates of 495 h and -650 h on adjacent cells of the
+    capacity sweep. The logistic crossing depends on the ORDERING of outcomes
+    rather than their magnitudes, so it degrades gracefully instead of exploding.
+    """
+    m = dur < T
+    d, y = dur[m], (dR[m] > 0).astype(float)
+    if len(d) < 12 or y.min() == y.max():
+        return np.nan
+    # Newton IRLS on a 2-parameter logistic, ridge-stabilized
+    X = np.column_stack([np.ones_like(d), d])
+    b = np.zeros(2)
+    for _ in range(60):
+        eta = np.clip(X @ b, -30, 30)
+        mu = 1.0 / (1.0 + np.exp(-eta))
+        W = np.maximum(mu * (1 - mu), 1e-9)
+        H = X.T @ (X * W[:, None]) + 1e-6 * np.eye(2)
+        g = X.T @ (y - mu)
+        step = np.linalg.solve(H, g)
+        b = b + step
+        if np.max(np.abs(step)) < 1e-10:
+            break
+    return -b[0] / b[1] if abs(b[1]) > 1e-12 else np.nan
+
+
 def fit_dstar(dur, dR, T=R_WIN):
     """Breakeven from the below-horizon branch (Proposition 1)."""
     m = dur < T
@@ -198,7 +248,8 @@ def analyze(boot=4000):
     for f in files:
         fr = pd.read_parquet(f)
         stem = pathlib.Path(f).stem
-        fr["contract"] = ("crude_com" if stem.endswith("_crudecom")
+        fr["contract"] = ("capacity" if stem.endswith("_cap")
+                          else "crude_com" if stem.endswith("_crudecom")
                           else ("cold" if stem.endswith("_cold") else "hot"))
         fr["path"] = "topology" if "topology" in stem else "control"
         frames.append(fr)
@@ -213,11 +264,12 @@ def analyze(boot=4000):
         for tau in taus:
             s = d[(d.option == opt) & (d.contract == contract) & (d.tau_dry == tau)]
             ds, sl = fit_dstar(s.duration_hr.to_numpy(), s.dR.to_numpy())
+            ds_l = fit_dstar_logit(s.duration_hr.to_numpy(), s.dR.to_numpy())
             n_cond = int(ds > 0) if np.isfinite(ds) else 0
             p_exc = float((s.duration_hr > ds).mean()) if np.isfinite(ds) else np.nan
             rows.append(dict(option=opt, contract=contract, tau=tau, D_star=ds,
-                             slope=sl, conditional=n_cond, p_exceed=p_exc,
-                             n=len(s)))
+                             slope=sl, D_star_logit=ds_l, conditional=n_cond,
+                             p_exceed=p_exc, n=len(s)))
     tab = pd.DataFrame(rows)
 
     hdr = f"{'option/contract':>20} " + " ".join(f"{t:>8.0f}" for t in taus) + f" {'dD*/dtau':>10} {'95% CI':>18}"
@@ -226,10 +278,10 @@ def analyze(boot=4000):
     for opt, contract in sorted(set(zip(tab.option, tab.contract))):
         s = tab[(tab.option == opt) & (tab.contract == contract)].sort_values("tau")
         cells = " ".join(f"{v:8.1f}" if np.isfinite(v) else "     n/a"
-                         for v in s.D_star)
-        ok = s.D_star.notna()
+                         for v in s.D_star_logit)
+        ok = s.D_star_logit.notna()
         if ok.sum() >= 3:
-            x, y = s.tau[ok].to_numpy(), s.D_star[ok].to_numpy()
+            x, y = s.tau[ok].to_numpy(), s.D_star_logit[ok].to_numpy()
             slope = np.polyfit(x, y, 1)[0]
             bs = []
             for _ in range(boot):
@@ -280,7 +332,7 @@ def main():
     ap.add_argument("--n", type=int, default=40)
     ap.add_argument("--workers", type=int, default=os.cpu_count())
     ap.add_argument("--path", default="control",
-                    choices=["control", "topology", "crude"],
+                    choices=["control", "topology", "crude", "capacity"],
                     help="control: binary control inputs (do NOT traverse the "
                          "dryer). topology: compiler edge activation, which "
                          "does, and is the correct unit-slope test.")
