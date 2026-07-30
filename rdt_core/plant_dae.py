@@ -53,6 +53,13 @@ class PlantParams:
     # transition becomes genuinely residence-gated.
     cold_start: bool = False
     tau_commission_mult: float = 1.0  # tau_commission = mult * tau_dry
+    # Commissioning time constant for the crude-sale line-up [hr]. This is the
+    # tau of Proposition 1 for a SUBSTITUTIVE option: establishing a crude
+    # off-take (product certification, buyer nomination, pump and metering
+    # line-up) before the diverted stream can actually be sold. Swept by
+    # scripts/tau_sweep.py --path crude to test dD*/dtau = 1 where the theory
+    # says it should hold. Active only when cold_start is True.
+    tau_com_crude: float = 6.0
     # --- downstream yields [est.; brief-consistent] ---
     y_oil: float = 0.63             # press: oil per kg copra (62–65% brief)
     y_refine: float = 0.97          # refining mass recovery
@@ -105,6 +112,11 @@ def build_plant_dae(p: PlantParams):
     I = ca.SX.sym("I", 4)                           # copra, vco, shell, ccw
     m_evap_d = ca.SX.sym("m_evap_d")
     m_out = ca.SX.sym("m_out")
+    # Commissioning availability of the crude off-take (cold-start contract only).
+    # Appended LAST in the state vector so existing positional x0 construction
+    # remains valid; callers extend x0 by one zero when cold_start is enabled.
+    cold_crude = bool(getattr(p, "cold_start", False))
+    a_cr = ca.SX.sym("a_crude") if cold_crude else None
     F_oil = ca.SX.sym("F_oil")                      # algebraic
     F_conc = ca.SX.sym("F_conc")                    # algebraic
     F_nuts = ca.SX.sym("F_nuts")                    # parameter (event-set)
@@ -152,7 +164,12 @@ def build_plant_dae(p: PlantParams):
     F_meal = F_press - F_oil                        # by mass difference
     F_tank_out = I[1] / p.tau_tank                  # crude tank draw demand
     F_refine = ca.fmin(h_ref * F_tank_out, p.cap_refine)   # V05 capacity-capped
-    F_crude_sale = u_crude * (F_tank_out - F_refine)        # ΔG: sell what V05 can't take
+    # Substitutive option: diverting to crude sale surrenders the refining
+    # premium immediately, so its transition genuinely depresses value output
+    # below the do-nothing baseline. That is the v_tau <= v_d condition
+    # Proposition 1 requires and the solar train does not satisfy.
+    _crude_gate = (a_cr if cold_crude else 1.0)
+    F_crude_sale = _crude_gate * u_crude * (F_tank_out - F_refine)  # ΔG: sell what V05 can't take
     F_vco = p.y_refine * F_refine
     F_ref_loss = F_refine - F_vco
     oil_wet = p.y_wet * y_mult * F_wet              # wet route: lower yield
@@ -171,10 +188,12 @@ def build_plant_dae(p: PlantParams):
     F_sinks = (F_husk + F_meal + F_vco + F_ref_loss + F_char + F_offgas
                + F_conc + F_evap_water + F_crude_sale + F_spoil + cake_wet)
 
-    ode = ca.vertcat(*dxs, dI, F_evap_dryer, F_sinks)
+    _tau_cc = max(1e-6, float(getattr(p, "tau_com_crude", 6.0)))
+    _da_cr = [(1.0 - a_cr) / _tau_cc] if cold_crude else []
+    ode = ca.vertcat(*dxs, dI, F_evap_dryer, F_sinks, *_da_cr)
     alg = ca.vertcat(F_oil - p.y_oil * y_mult * F_press,             # press yield
                      F_conc - F_evap_feed * p.brix_in / p.brix_out)   # solids balance
-    x = ca.vertcat(xs, I, m_evap_d, m_out)
+    x = ca.vertcat(xs, I, m_evap_d, m_out, *([a_cr] if cold_crude else []))
     z = ca.vertcat(F_oil, F_conc)
     par = ca.vertcat(F_nuts, y_mult, dx_wb, h_dry, h_press, h_ref, u_crude, u_wet, u_buy)
     dae = {"x": x, "z": z, "p": par, "ode": ode, "alg": alg}

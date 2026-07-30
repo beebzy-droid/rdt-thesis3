@@ -351,6 +351,79 @@ the threefold change in breakeven between contracts, but the specific
 $\tau + c/\gamma$ decomposition remains confirmed only in its saturation
 prediction and its identifiability behaviour, not in its slope.
 
+## 5.3 Three failed attempts, and a revision to the mechanism
+
+A third experiment extended the commissioning contract to the crude bypass, a
+substitutive option that surrenders the refining premium and therefore looked like
+the case Proposition 1 was written for. Sweeping its own commissioning constant
+$\tau_{\text{com}} \in \{2,\dots,48\}$ h gives $D^{*} = 69.3 \to 68.7$ h,
+slope $-0.01$, CI $[-0.02,\,0.00]$. A third null.
+
+The three attempts and their diagnoses:
+
+| Experiment | Result | Why |
+|---|---|---|
+| $\tau_{\text{dry}}$ swept against control-input options | slope $\approx 0$ | those options bypass the dryer; wrong $\tau$ |
+| $\tau_{\text{dry}}$ swept against the solar train | slope $-0.01$ | additive option: parallel capacity, $v_\tau \approx v_d$, so $c \approx 0$ |
+| $\tau_{\text{com}}$ swept against the crude bypass | slope $-0.01$ | the gate delays the option's *effect*, it does not open a value *gap*; again $c \approx 0$ |
+
+The pattern is not a sequence of implementation accidents. It is a structural
+property of the plant: **no option in this superstructure satisfies
+$v_{\tau,k} \le v_d$.** Every modeled reconfiguration either adds parallel
+capacity or monetizes a stream that would otherwise back up. None of them requires
+breaking a working path before its replacement is available, which is the only
+circumstance under which a transition depresses output below the do-nothing
+baseline. With $c_k \approx 0$ throughout, the term $c_k/\gamma_k$ vanishes and
+$D^{*} \approx \tau_k$, yet the measured breakevens are far larger than any
+transition timescale in the plant. The decomposition therefore does not explain
+them.
+
+**What generates the observed conditionality is a standing opportunity cost, not
+a transition.** The crude bypass sacrifices the refined-product premium
+continuously for as long as it is active, and that sacrifice is repaid only if the
+disruption lasts long enough for the constraint it relieves, crude tank fill and
+the consequent press throttle, to actually bind. Writing $\lambda_k$ for the rate
+of standing value sacrificed while option $k$ is active and $\rho_k$ for the rate
+of loss it averts once the relieved constraint binds at time $D_k^{\text{bind}}$,
+the breakeven satisfies
+
+$$\rho_k\bigl(D - D_k^{\text{bind}}\bigr) = \lambda_k D
+\quad\Longrightarrow\quad
+D_k^{*} = \frac{\rho_k D_k^{\text{bind}}}{\rho_k - \lambda_k},$$
+
+which is an economic ratio governed by when a constraint binds, not by how long a
+transition takes. This form reproduces the qualitative facts the data show: a
+breakeven well above any physical timescale, options that are net harmful on short
+disruptions, and insensitivity to residence times.
+
+**The consequence for the contribution must be stated without hedging.** The claim
+that transition dynamics are the binding constraint on reactive reconfiguration,
+and the resulting boundary against the power-systems literature via
+$\tau \to 0$, are **not supported by this model.** The conditional structure is
+real and the breakevens are real, but their mechanism is the timing of constraint
+activation under a standing opportunity cost, and an instantaneous-switching
+network faces a recognizable version of that same problem. Corollary 2 remains
+valid as mathematics and as a statement about what *would* distinguish the
+domains; it is not currently a statement about what distinguishes this plant.
+
+What survives unchanged, and is independently useful: the saturation prediction of
+Corollary 1.1, confirmed at a slope ratio of 0.000; the identifiability behaviour
+of Section 5, in which options with vanishing rescue margin have unidentifiable
+breakevens exactly as the algebra requires; and the re-initialization finding of
+Section 5.2, that hot-starting newly activated units understates the breakeven
+three- to fourfold. That last result is genuinely about transition fidelity, and
+it stands on its own without requiring the breakeven to be transition-governed.
+
+One temptation must be named and refused. It would be straightforward to add
+break-before-make physics, throttling the refining path on commitment while the
+off-take commissions, and thereby manufacture the value gap that
+$v_\tau \le v_d$ requires. That would make the slope test pass. It would also be
+fitting the plant to the theory rather than the theory to the plant, and the
+resulting number would mean nothing. Such a mechanism should be added only if a
+specific reconfiguration in a real facility genuinely requires breaking its
+current route before the replacement is available, in which case it is physics and
+belongs in the model on its own merits.
+
 ## 6. The regional design criterion
 
 Proposition 3 makes the value of a reconfiguration capability an explicit product

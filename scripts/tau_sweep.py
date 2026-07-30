@@ -85,7 +85,7 @@ def run_cell(job):
     """One (tau, category) cell. Self-contained so it survives spawn."""
     tau, cat, n_scen, path, cold = job
     OUT.mkdir(parents=True, exist_ok=True)
-    tag = "cold" if cold else "hot"
+    tag = ("crudecom" if path == "crude" else ("cold" if cold else "hot"))
     out = OUT / f"tau{tau:05.1f}_{cat}_{path}_{tag}.parquet"
     if out.exists():
         return f"tau={tau:5.1f} {cat} skip (exists)"
@@ -96,7 +96,13 @@ def run_cell(job):
     gp = _load_gen_pilot()
 
     # tau enters ONLY through the plant parameters; everything downstream is rebuilt
-    p = PlantParams(tau_dry=float(tau), cold_start=bool(cold))
+    if path == "crude":
+        # Sweep the SUBSTITUTIVE option's own commissioning time constant. This
+        # is the tau of Proposition 1 for that option; tau_dry is not, which is
+        # why the earlier sweeps could not move the breakeven.
+        p = PlantParams(tau_com_crude=float(tau), cold_start=True)
+    else:
+        p = PlantParams(tau_dry=float(tau), cold_start=bool(cold))
     dae, out_fn = build_plant_dae(p)
     intg = ca.integrator("P", "idas", dae, 0.0, gp.DT,
                          {"abstol": 1e-8, "reltol": 1e-8})
@@ -104,6 +110,9 @@ def run_cell(job):
     x0 = np.concatenate([np.full(5, wb2db(p.x_in_wb)),
                          [F0 * 0.30 * p.tau_buf * 0.8, 2000.0, 3000.0, 1000.0],
                          [0, 0]])
+    if getattr(p, "cold_start", False):
+        # a_crude starts at zero: the off-take is not yet lined up
+        x0 = np.concatenate([x0, [0.0]])
     z0 = np.zeros(2)
 
     rows, t0 = [], time.perf_counter()
@@ -111,7 +120,9 @@ def run_cell(job):
         return _run_topology_cell(tau, cat, n_scen, out, p, F0, t0, cold)
     for dp in sample(cat, n_scen, SEED0):
         _, R0, _, _, V0 = gp.run_one(dp, p, intg, out_fn, F0, x0, z0)
-        for name, u in OPTIONS_CONTROL.items():
+        opts = ({"crude_bypass": dict(u_crude=1.0)} if path == "crude"
+                else OPTIONS_CONTROL)
+        for name, u in opts.items():
             _, R1, _, _, _ = gp.run_one(dp, p, intg, out_fn, F0, x0, z0, **u)
             rows.append(dict(tau_dry=float(tau), category=cat, seed=dp.seed,
                              severity=dp.severity, duration_hr=dp.duration_hr,
@@ -187,7 +198,8 @@ def analyze(boot=4000):
     for f in files:
         fr = pd.read_parquet(f)
         stem = pathlib.Path(f).stem
-        fr["contract"] = "cold" if stem.endswith("_cold") else "hot"
+        fr["contract"] = ("crude_com" if stem.endswith("_crudecom")
+                          else ("cold" if stem.endswith("_cold") else "hot"))
         fr["path"] = "topology" if "topology" in stem else "control"
         frames.append(fr)
     d = pd.concat(frames, ignore_index=True)
@@ -268,7 +280,7 @@ def main():
     ap.add_argument("--n", type=int, default=40)
     ap.add_argument("--workers", type=int, default=os.cpu_count())
     ap.add_argument("--path", default="control",
-                    choices=["control", "topology"],
+                    choices=["control", "topology", "crude"],
                     help="control: binary control inputs (do NOT traverse the "
                          "dryer). topology: compiler edge activation, which "
                          "does, and is the correct unit-slope test.")
