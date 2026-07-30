@@ -83,9 +83,10 @@ def _load_gen_pilot():
 
 def run_cell(job):
     """One (tau, category) cell. Self-contained so it survives spawn."""
-    tau, cat, n_scen, path = job
+    tau, cat, n_scen, path, cold = job
     OUT.mkdir(parents=True, exist_ok=True)
-    out = OUT / f"tau{tau:05.1f}_{cat}_{path}.parquet"
+    tag = "cold" if cold else "hot"
+    out = OUT / f"tau{tau:05.1f}_{cat}_{path}_{tag}.parquet"
     if out.exists():
         return f"tau={tau:5.1f} {cat} skip (exists)"
 
@@ -95,7 +96,7 @@ def run_cell(job):
     gp = _load_gen_pilot()
 
     # tau enters ONLY through the plant parameters; everything downstream is rebuilt
-    p = PlantParams(tau_dry=float(tau))
+    p = PlantParams(tau_dry=float(tau), cold_start=bool(cold))
     dae, out_fn = build_plant_dae(p)
     intg = ca.integrator("P", "idas", dae, 0.0, gp.DT,
                          {"abstol": 1e-8, "reltol": 1e-8})
@@ -107,7 +108,7 @@ def run_cell(job):
 
     rows, t0 = [], time.perf_counter()
     if path == "topology":
-        return _run_topology_cell(tau, cat, n_scen, out, p, F0, t0)
+        return _run_topology_cell(tau, cat, n_scen, out, p, F0, t0, cold)
     for dp in sample(cat, n_scen, SEED0):
         _, R0, _, _, V0 = gp.run_one(dp, p, intg, out_fn, F0, x0, z0)
         for name, u in OPTIONS_CONTROL.items():
@@ -122,7 +123,7 @@ def run_cell(job):
             f"{time.perf_counter()-t0:5.0f}s")
 
 
-def _run_topology_cell(tau, cat, n_scen, out, p, F0, t0):
+def _run_topology_cell(tau, cat, n_scen, out, p, F0, t0, cold=False):
     """Topology-path cell: options activate candidate edges through the compiler,
     so a change that adds dryer capacity has its transition gated by tau_dry.
     Reuses the switch-at-decision protocol of scripts/gen_labels_topo.py."""
@@ -146,8 +147,11 @@ def _run_topology_cell(tau, cat, n_scen, out, p, F0, t0):
     arms = {}
     for name, edges in OPTIONS_TOPO.items():
         c1 = compile_plant(apply_change(glt.gmax_inactive(), edges), p)
-        x1 = warm_start_map(x0, c0.state_names, c1.state_names,
-                            {f"x_dryB_{i}": wb2db(p.x_in_wb) for i in range(5)})
+        # Cold start relies on warm_start_map defaulting absent states to 0.0:
+        # a_solar is not supplied, so the train commissions from zero availability.
+        # Hot start additionally pre-fills the new compartments at inlet moisture.
+        defaults = {f"x_dryB_{i}": wb2db(p.x_in_wb) for i in range(5)}
+        x1 = warm_start_map(x0, c0.state_names, c1.state_names, defaults)
         arms[name] = (c1, mk(c1), x1, c1.state_names)
     arm0 = (c0, i0, x0, c0.state_names)
 
@@ -179,28 +183,36 @@ def analyze(boot=4000):
     files = sorted(glob.glob(str(OUT / "*.parquet")))
     if not files:
         sys.exit("no tau_sweep shards; run without --analyze first")
-    d = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
+    frames = []
+    for f in files:
+        fr = pd.read_parquet(f)
+        stem = pathlib.Path(f).stem
+        fr["contract"] = "cold" if stem.endswith("_cold") else "hot"
+        fr["path"] = "topology" if "topology" in stem else "control"
+        frames.append(fr)
+    d = pd.concat(frames, ignore_index=True)
     taus = np.sort(d.tau_dry.unique())
     print(f"loaded {len(d)} labels over tau in {list(taus)} h, "
           f"{d.option.nunique()} options\n")
 
     print("PROPOSITION 1 PREDICTION: dD*/dtau = 1 (unit slope)\n")
     rows = []
-    for opt in sorted(d.option.unique()):
+    for opt, contract in sorted(set(zip(d.option, d.contract))):
         for tau in taus:
-            s = d[(d.option == opt) & (d.tau_dry == tau)]
+            s = d[(d.option == opt) & (d.contract == contract) & (d.tau_dry == tau)]
             ds, sl = fit_dstar(s.duration_hr.to_numpy(), s.dR.to_numpy())
             n_cond = int(ds > 0) if np.isfinite(ds) else 0
             p_exc = float((s.duration_hr > ds).mean()) if np.isfinite(ds) else np.nan
-            rows.append(dict(option=opt, tau=tau, D_star=ds, slope=sl,
-                             conditional=n_cond, p_exceed=p_exc, n=len(s)))
+            rows.append(dict(option=opt, contract=contract, tau=tau, D_star=ds,
+                             slope=sl, conditional=n_cond, p_exceed=p_exc,
+                             n=len(s)))
     tab = pd.DataFrame(rows)
 
-    hdr = f"{'option':>14} " + " ".join(f"{t:>8.0f}" for t in taus) + f" {'dD*/dtau':>10} {'95% CI':>18}"
+    hdr = f"{'option/contract':>20} " + " ".join(f"{t:>8.0f}" for t in taus) + f" {'dD*/dtau':>10} {'95% CI':>18}"
     print(hdr); print("-" * len(hdr))
     rng = np.random.default_rng(0)
-    for opt in sorted(tab.option.unique()):
-        s = tab[tab.option == opt].sort_values("tau")
+    for opt, contract in sorted(set(zip(tab.option, tab.contract))):
+        s = tab[(tab.option == opt) & (tab.contract == contract)].sort_values("tau")
         cells = " ".join(f"{v:8.1f}" if np.isfinite(v) else "     n/a"
                          for v in s.D_star)
         ok = s.D_star.notna()
@@ -217,18 +229,18 @@ def analyze(boot=4000):
             ci = f"[{lo:7.2f},{hi:7.2f}]"
         else:
             slope, ci = np.nan, "       n/a        "
-        print(f"{opt:>14} {cells} {slope:10.2f} {ci:>18}")
+        print(f"{opt+'/'+contract:>20} {cells} {slope:10.2f} {ci:>18}")
 
     tab.to_csv("data/tau_sweep_estimates.csv", index=False)
 
     # --- unit-slope verdict ---
     print()
     verdicts = []
-    for opt in sorted(tab.option.unique()):
-        s = tab[tab.option == opt].dropna(subset=["D_star"])
+    for opt, contract in sorted(set(zip(tab.option, tab.contract))):
+        s = tab[(tab.option == opt) & (tab.contract == contract)].dropna(subset=["D_star"])
         if len(s) >= 3:
             sl = np.polyfit(s.tau, s.D_star, 1)[0]
-            verdicts.append((opt, sl))
+            verdicts.append((f"{opt}/{contract}", sl))
     if verdicts:
         med = float(np.median([v for _, v in verdicts]))
         print(f"UNIT-SLOPE TEST: median dD*/dtau across options = {med:.2f}")
@@ -260,13 +272,16 @@ def main():
                     help="control: binary control inputs (do NOT traverse the "
                          "dryer). topology: compiler edge activation, which "
                          "does, and is the correct unit-slope test.")
+    ap.add_argument("--cold", action="store_true",
+                    help="use the cold-start commissioning contract")
     ap.add_argument("--analyze", action="store_true")
     a = ap.parse_args()
     if a.analyze:
         analyze(); return
 
     taus = [float(t) for t in a.taus.split(",")]
-    jobs = [(t, c, a.n, a.path) for t in taus for c in a.cats.split(",")]
+    jobs = [(t, c, a.n, a.path, a.cold) for t in taus
+            for c in a.cats.split(",")]
     print(f"{len(jobs)} cells (tau x category), {a.workers} workers, "
           f"{a.n} scenarios/cell")
     if a.workers == 1:

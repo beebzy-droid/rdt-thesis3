@@ -82,6 +82,9 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     n_c = p.n_comp
     xs = ca.SX.sym("xm", n_c)                 # primary dryer moisture chain
     xsB = ca.SX.sym("xmB", n_c) if has_solar else None
+    # commissioning availability of the solar train (cold-start contract only)
+    cold_B = bool(has_solar and getattr(p, "cold_start", False))
+    aB = ca.SX.sym("a_solar") if cold_B else None
     I = ca.SX.sym("I", 4)                     # copra, vco, shell, ccw
     m_evap = ca.SX.sym("m_evap"); m_out = ca.SX.sym("m_out")
     F_oil = ca.SX.sym("F_oil"); F_conc = ca.SX.sym("F_conc")
@@ -126,6 +129,12 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
 
     dxs_A, F_copra_A, F_ev_A = dryer_chain(xs, F_kd_A)
     if has_solar:
+        # Cold start: the train takes load progressively as it fills and reaches a
+        # steady moisture profile. Ramping INTAKE (rather than discharge) keeps the
+        # mass balance automatic, because kernel not routed to B follows the paths
+        # the null topology already provides.
+        if cold_B:
+            F_kd_B = aB * F_kd_B
         MsB = (p.tau_dry / n_c) * (solar_cap_kernel * (1 - p.x_in_wb))
         FsB = F_kd_B * (1 - x_in_wb_eff)
         dxs_B = ca.vertcat(*[(FsB / MsB) * ((x_in if i == 0 else xsB[i - 1]) - xsB[i])
@@ -172,9 +181,12 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
                + F_conc + F_evap_water + F_crude_sale + F_spoil + cake_wet
                + F_csale + F_nut_sale)
 
-    ode_parts = [dxs_A] + ([dxs_B] if has_solar else []) + \
+    tau_com = max(1e-6, getattr(p, "tau_commission_mult", 1.0) * p.tau_dry)
+    daB = [(1.0 - aB) / tau_com] if cold_B else []
+    ode_parts = [dxs_A] + ([dxs_B] if has_solar else []) + daB + \
                 [dI, F_ev_A + F_ev_B, F_sinks]
-    x_parts = [xs] + ([xsB] if has_solar else []) + [I, m_evap, m_out]
+    x_parts = [xs] + ([xsB] if has_solar else []) + ([aB] if cold_B else []) + \
+              [I, m_evap, m_out]
     x = ca.vertcat(*x_parts)
     z = ca.vertcat(F_oil, F_conc)
     par = ca.vertcat(F_nuts, y_mult, dx_wb, h_dry, h_press, h_ref)
@@ -241,6 +253,11 @@ def compile_plant(G: nx.DiGraph, p: PlantParams | None = None,
     names = [f"x_dryA_{i}" for i in range(n_c)]
     if has_solar:
         names += [f"x_dryB_{i}" for i in range(n_c)]
+    if cold_B:
+        # MUST match the x_parts ordering above: availability sits after the
+        # dryer-B chain and before the inventories. warm_start_map keys on these
+        # names, so a mismatch would silently misalign the state remap.
+        names += ["a_solar"]
     names += ["I_copra", "I_vco", "I_shell", "I_ccw", "m_evap", "m_out"]
     return CompiledPlant(dae=dae, out_fn=out_fn, state_names=names,
                          param_names=["F_nuts", "y_mult", "dx_wb",

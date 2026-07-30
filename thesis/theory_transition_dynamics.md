@@ -290,6 +290,67 @@ reconfigurations that a real plant would not survive. Model fidelity in the
 re-initialization contract is not a numerical detail; it determines whether the
 decision the twin recommends is the right one.
 
+## 5.2 The cold-start contract, and a scope limit on Proposition 1
+
+Section 5.1 traced the failed unit-slope test to a re-initialization contract that
+hot-starts newly activated units. `PlantParams(cold_start=True)` adds the missing
+physics: a per-train commissioning availability $a \in [0,1]$ with
+$\dot{a} = (1-a)/\tau_{\text{com}}$, $\tau_{\text{com}} = \tau_{\text{dry}}$,
+ramping the train's intake as it fills and establishes a moisture profile. The
+state initializes at zero on activation, so commissioning is genuinely
+residence-gated. The flag is opt-in and the default reproduces all previously
+reported results exactly.
+
+Re-running the sweep under both contracts, for the solar-train option whose
+activation adds dryer capacity:
+
+| Contract | $D^{*}$ at $\tau = 12$ | at $\tau = 24$ | at $\tau = 36$ | at $\tau = 48$ | $dD^{*}/d\tau$ | 95% CI |
+|---|---|---|---|---|---|---|
+| hot start | 4.3 h | 3.9 h | 3.8 h | 3.7 h | $-0.01$ | $[-0.03,\,-0.01]$ |
+| **cold start** | **12.2 h** | **14.2 h** | **15.1 h** | **15.6 h** | **$+0.09$** | **$[0.05,\,0.14]$** |
+
+Two results, one of which is a correction to this paper's own theory.
+
+**The re-initialization contract changes the decision.** Cold starting raises the
+breakeven by a factor of three to four and reverses the sign of its dependence on
+residence time. A twin that hot-starts newly activated units will recommend
+reconfigurations at disruption durations where a real plant would lose money, and
+the error is not marginal. We regard this as the most transferable practical
+finding in the paper: re-initialization fidelity is a first-order determinant of
+whether a prescriptive twin's recommendation is correct, and it is routinely
+treated as a numerical implementation detail.
+
+**Proposition 1 applies to substitutive options, not additive ones.** The slope
+moves in the right direction but reaches only 0.09, far from the predicted unity,
+and the reason is a scope condition the derivation of Section 1 left implicit. That
+derivation assumed $v_{\tau,k} \le v_d$: during the transition the plant produces
+*less than it would have by doing nothing*, because the reconfiguration sacrifices
+the currently operating path. The solar train violates this. It adds capacity in
+parallel while the primary train keeps running, so commissioning delays the gain
+but never depresses output below the do-nothing baseline. With $v_{\tau} \approx v_d$
+the switching cost $c_k \approx 0$, the term $c_k/\gamma_k$ vanishes, and the
+breakeven is governed by the shape of the commissioning ramp rather than by
+$\tau + c/\gamma$.
+
+The proposition should therefore be read with an explicit taxonomy:
+
+- **Substitutive options** reroute material away from an operating path and
+  sacrifice its output during the change. These have $c_k > 0$ and are the
+  options Proposition 1 describes. The crude bypass is the clearest instance in
+  this plant, surrendering the refined-product premium, and it carries the largest
+  measured breakeven at 51 to 70 h.
+- **Additive options** bring parallel capacity online without disturbing the
+  operating path. These have $c_k \approx 0$, a breakeven set by commissioning
+  delay alone, and only weak dependence on $\tau$.
+
+This is a genuine limitation on the result as originally stated, and it defines
+the next experiment precisely: extend the cold-start contract to a substitutive
+option and test the unit slope where the theory predicts it should hold. Until
+that is done, the transition-time mechanism is demonstrated to *matter*, through
+the threefold change in breakeven between contracts, but the specific
+$\tau + c/\gamma$ decomposition remains confirmed only in its saturation
+prediction and its identifiability behaviour, not in its slope.
+
 ## 6. The regional design criterion
 
 Proposition 3 makes the value of a reconfiguration capability an explicit product

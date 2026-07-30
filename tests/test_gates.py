@@ -226,3 +226,30 @@ def test_console_module_reconfigures():
         print("\u2713\u0394\u03c6")               # must not raise
     finally:
         sys.stdout = old
+
+
+def test_cold_start_is_opt_in_and_adds_one_state():
+    """The cold-start commissioning contract must be opt-in: default PlantParams
+    must reproduce the historical 16-state solar topology exactly, and enabling it
+    must add exactly one state, named a_solar, positioned between the dryer-B
+    chain and the inventories so warm_start_map remaps correctly."""
+    from rdt_core.plant_dae import PlantParams
+    from rdt_core import icpc_graph as icpc
+    from rdt_core.compiler import compile_plant, apply_change
+    G = icpc.build_g_max()
+    for u, v, a in G.edges(data=True):
+        if a.get("candidate"):
+            G.edges[u, v]["active"] = False
+    edges = [("V02_CRACKING", "V03B_SOLAR"), ("V03B_SOLAR", "BUF_COPRA")]
+    hot = compile_plant(apply_change(G.copy(), edges), PlantParams())
+    cold = compile_plant(apply_change(G.copy(), edges),
+                         PlantParams(cold_start=True))
+    assert "a_solar" not in hot.state_names
+    assert cold.state_names.count("a_solar") == 1
+    assert len(cold.state_names) == len(hot.state_names) + 1
+    # state vector and names must stay aligned or the remap silently corrupts
+    assert cold.dae["x"].shape[0] == len(cold.state_names)
+    assert hot.dae["x"].shape[0] == len(hot.state_names)
+    i = cold.state_names.index("a_solar")
+    assert cold.state_names[i - 1] == "x_dryB_4"
+    assert cold.state_names[i + 1] == "I_copra"

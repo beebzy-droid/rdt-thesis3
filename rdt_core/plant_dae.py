@@ -40,6 +40,19 @@ class PlantParams:
     x_eq: float = 0.040             # equilibrium moisture, dry basis [est.]
     x_in_wb: float = 0.18           # dryer inlet, wet basis (Table 5.1)
     tau_dry: float = 30.0           # design residence [hr], mid-envelope
+    # --- re-initialization contract (added 2026-07-13) -------------------------
+    # cold_start=False reproduces the historical behaviour exactly: a newly
+    # activated train is hot-started and discharges as soon as feed arrives, so
+    # its transition is set by flow redistribution rather than by residence. That
+    # is optimistic, and scripts/tau_sweep.py showed it makes the breakeven
+    # duration independent of tau_dry (theory Section 5.1).
+    # cold_start=True adds a per-train commissioning availability state a in
+    # [0,1] with da/dt = (1-a)/tau_commission, ramping the train's intake as it
+    # fills and establishes a moisture profile. a is initialized to 0 on
+    # activation (warm_start_map already defaults absent states to 0.0), so the
+    # transition becomes genuinely residence-gated.
+    cold_start: bool = False
+    tau_commission_mult: float = 1.0  # tau_commission = mult * tau_dry
     # --- downstream yields [est.; brief-consistent] ---
     y_oil: float = 0.63             # press: oil per kg copra (62–65% brief)
     y_refine: float = 0.97          # refining mass recovery
