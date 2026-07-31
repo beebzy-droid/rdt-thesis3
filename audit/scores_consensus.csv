@@ -1,0 +1,8 @@
+paper_id,P1,P2,P3,P4,P5,P6,note
+A1,V,NR,S,P,V,NA,"P2 NR: acts repeatedly, recurrence untested. P4 P: CIs not pre-registration"
+A2,P,NA,S,P,V,NA,"P1 P by new mixed-arm rule: headline claim is the MISOCP comparison, which is asymmetric"
+C1,V,NA,NA,NR,V,NA,"P1 V: baseline doubles as reward standard. P3 NA: comparators implemented, none unbuilt"
+D1,S,NR,NR,NR,V,NA,"tuned (s,S) and (S,T), shared cost params across arms"
+D2,P,NR,NR,P,NR,NA,"P4 P: honest negative reported, not advance commitment"
+E2,S,NR,NR,P,NR,NA,"identical action space, reward and objective vs MLP-PPO"
+E3,S,NR,S,NR,NR,NA,"P1 S on rater 2 full-text reading: shared environment across all comparators"

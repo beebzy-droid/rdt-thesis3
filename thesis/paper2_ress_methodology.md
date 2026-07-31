@@ -31,7 +31,9 @@ that they falsified before publication. And we audit roughly thirty published
 prescriptive-system evaluations, finding recurrence justification and
 re-initialization reporting near-universally absent, bounding rare but demonstrably
 achievable, and detection and decision studied by communities that do not reference
-one another. The resilience result, a 0.244 improvement in the 72-hour resilience
+one another. A blind two-rater subsample gives a pooled Cohen's kappa of 0.818,
+with disagreements falling almost entirely on degree of compliance rather than on
+whether a practice was a problem. The resilience result, a 0.244 improvement in the 72-hour resilience
 integral and a 57.7% reduction in time to 80% recovery, is the worked example
 rather than the contribution.
 
@@ -499,19 +501,41 @@ the failures its authors have already encountered.
 
 ### 7.4 Single rater, and the instrument for a second
 
-The scoring reported here was performed by one rater, which is a real limitation:
-several of these judgements require reading a methods section for what it does not
-say, and reasonable readers will differ. We have not attempted to conceal this by
-scoring twice ourselves, which would measure the stability of one person's
-judgement while appearing to measure agreement between two.
+Several of these judgements require reading a methods section for what it does not
+say, and reasonable readers will differ. Rather than assert that our scoring was
+objective, we measured it. Two raters scored seven papers independently against the
+rubric, with the first rater's codes sealed until the second rating was recorded.
+The threshold that would invalidate the audit was fixed in advance: a kappa below
+roughly 0.4 would mean the rubric was not operational enough to publish, and the
+audit would be revised before being reported rather than after.
 
-Instead we release the instrument. The rubric, a blind scoring sheet, the
-first-rater scores sealed until a second rating is recorded, and a script computing
-Cohen's kappa with bootstrap intervals are all in the public repository. The
-protocol commits in advance to the outcome that would invalidate the audit: a kappa
-below roughly 0.4 would indicate the rubric is not operational enough to publish,
-and the audit would be revised before being reported rather than after. Applying
-protocol four to our own instrument seemed the minimum consistency this paper owes.
+Pooled Cohen's kappa was 0.818, with a bootstrap interval of [0.68, 0.94] over
+papers, and raw agreement of 0.86. Six of forty-two cells disagreed.
+
+The distribution of those six is more informative than the pooled figure. **Five of
+the six were disagreements between Satisfied and Partial: both raters saw the same
+practice and differed on whether it fully or partly met the protocol. Not one was a
+disagreement about whether a practice was a problem.** Agreement was perfect on
+re-initialization, kappa 1.000, where the raters never differed on whether the
+contract was reported. The detection protocol was degenerate, both raters assigning
+Not Applicable to every paper, which is itself the finding that prescriptive
+studies assume disruption is known.
+
+The instrument therefore identifies problems reliably and grades degrees of
+compliance unreliably, and this bounds what we claim. The counts of Not Reported
+and Violated, which is where the audit's conclusions live, are trustworthy. Any
+finer ranking of which studies evaluated *best* is not, and we do not offer one.
+
+Adjudication changed three cells between Satisfied and Partial and moved one to Not
+Applicable, leaving all four headline findings unchanged. It also exposed four
+genuine ambiguities in the rubric rather than reading errors, each now amended: the
+boundary for when recurrence is applicable, the requirement that pre-registration
+be evidenced rather than inferred from good statistical practice, a rule for
+studies whose several comparators differ in symmetry, and a separation between
+bounding an unimplemented alternative and computing a performance ceiling. Three of
+the six disagreements arose from the second of these, because the protocol's name
+invites reading it as a general statistical-rigor score. The full adjudication,
+with reasoning per cell, is released with the instrument.
 
 ### 7.5 What the audit does and does not establish
 

@@ -43,6 +43,11 @@ the treatment?*
 - **NR** A baseline exists but neither arm is described in sufficient detail.
 - **NA** No comparative performance claim is made.
 
+*Mixed arms.* Where a study uses several comparators of differing symmetry, score
+the arm carrying the **headline claim** and record the others in comments. A
+symmetric ablation alongside an asymmetric primary comparison does not make the
+study S. (Amended after adjudication.)
+
 *Two common cases worth flagging, both scored* **V**:
 
 1. A learned method interacting with a nonlinear simulator, compared against an
@@ -69,11 +74,21 @@ the treatment?*
 - **NR** A closed loop, rolling horizon, or repeatedly-acting policy is proposed
   and no such comparison appears.
 - **NA** The system makes a single decision per scenario, so there is no
-  recurrence to justify.
+  recurrence to justify. **NA applies only in that case.** A policy that acts
+  repeatedly within an episode has recurrence to justify whether or not a
+  single-shot variant happens to be available, and is scored NR if no comparison
+  isolates it. (Amended after adjudication; this boundary caused a disagreement.)
 
 ## P3. Bounding the unbuilt alternative
 
-*Question: is an alternative approach bounded rather than asserted to be worse?*
+*Question: is an alternative that was NOT implemented bounded, rather than merely
+asserted to be worse?*
+
+**Scope note (amended after adjudication).** This protocol is about unimplemented
+alternatives. A comparator that was actually built and run is a protocol-1 matter,
+not a protocol-3 one, and a study that runs its alternatives rather than bounding
+them is scored **NA** here. A performance ceiling on the proposed method's own
+problem is a different object again and is scored P, not S.
 
 - **S** The paper reports an oracle, perfect-foresight, exact-optimum, or
   relaxation bound and compares against it.
@@ -91,6 +106,10 @@ the treatment?*
 
 - **S** Hypotheses, endpoints, thresholds, or an analysis plan were committed in
   advance, evidenced by a registry entry, timestamp, or version-controlled commit.
+  **Evidence of advance commitment is required.** However well executed, statistical
+  practice alone is never S. (Amended after adjudication: three of six
+  disagreements arose here, because the protocol's name invites reading it as a
+  general statistical-rigor score, which it is not.)
 - **P** Practices that pre-registration would formalize are present: interval
   estimates over multiple seeds or runs, repeated experiments explicitly to
   separate systematic effects from noise, or an honest negative reported about
