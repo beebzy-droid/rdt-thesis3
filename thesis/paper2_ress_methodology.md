@@ -43,19 +43,25 @@ comparator design; pre-registration; process systems.
 
 ### 1.1 The evaluation problem
 
-A prescriptive system earns its place by changing decisions. That makes the
-central claim about any such system comparative: the plant does better *with* it
-than *without* it. Comparative claims are only as good as the comparison, and the
-comparison is a design artifact chosen by the same people who built the system
-being evaluated.
+A prescriptive system earns its keep by changing decisions, which makes every
+claim about one a comparative claim: the plant does better with it than without.
+And a comparative claim is only ever as good as its comparison. The
+uncomfortable part is who builds that comparison. It is not an external standard
+handed down to the evaluator; it is a design artifact, chosen by the same people
+who built the thing being evaluated, and shaped by their intuitions about what a
+fair test looks like.
 
-This is not a hypothetical concern. In the course of the study reported here, an
-apparently reasonable evaluation design produced a resilience gain of 0.117 with
-a confidence interval that would have been reported as a weak positive. The same
-system, on the same scenarios, measured 0.241 once a single asymmetry in the
-comparison was corrected. Nothing about the flawed design announced itself. It
-looked like an honest, even conservative, evaluation, and it was wrong by a
-factor of two.
+We learned how much room that leaves for error by getting it wrong. Partway
+through the study reported here, a careful and, we thought, conservative
+evaluation returned a resilience gain of 0.117. It was a positive result with a
+confidence interval clear of zero, and we came close to reporting it as a modest
+success. It was wrong by a factor of two. The same system, on the same
+scenarios, measures 0.241 once a single asymmetry in the comparison is removed.
+
+What unsettled us was not the size of the error but its silence. The flawed
+design did not look flawed. It looked like the more rigorous choice, because it
+strengthened the baseline, and strengthening the baseline is what a careful
+evaluator is supposed to do.
 
 Resilience evaluation is where this matters most, because the decisions at stake
 are infrastructure decisions. A system that appears to deliver resilience it does
@@ -91,11 +97,11 @@ remains feasible under an uncertainty and disruption set.
 
 This literature answers *what to measure*. It says comparatively little about
 *what to measure against*, which is the subject of this paper. The gap is not
-peculiar to resilience engineering. Evaluation practice in adjacent prescriptive
-domains, including online network reconfiguration in power distribution and
-learning-based control, generally reports performance against a nominal or
-rule-based baseline without examining whether that baseline was granted the same
-advantages as the treated system.
+peculiar to resilience engineering. We are not aware of a systematic audit of
+comparator design in prescriptive-system evaluation, in this field or in adjacent
+ones, and we make no claim about its prevalence. What we can report is that the
+failure modes below were live in our own study, that they were not obvious in
+advance, and that each changed a headline number materially.
 
 Two literatures inform specific protocols. The methodological argument for
 pre-registration originates in the empirical sciences as a guard against analyst
@@ -103,6 +109,28 @@ degrees of freedom; Section 4.4 reports a different function, detection of model
 error. The practice of bounding an unbuilt alternative rather than constructing it
 is standard in optimization, where relaxations and oracles are routine, and
 Section 4.3 applies it to comparator design.
+
+### 2.1 What is new here, and what is borrowed
+
+Not all six protocols are novel, and a paper that implied otherwise would deserve
+the scepticism it received. Two are adaptations of established practice to a new
+setting: pre-registration comes from the empirical sciences, and bounding an
+unbuilt alternative is routine in optimization, where relaxations and oracles are
+everyday tools. Comparator symmetry is, in one sense, nothing more than
+experimental control, which is why its violation in our own study is the more
+instructive: knowing the principle did not prevent us from breaking it.
+
+Three we believe are new as stated. The recurrent-versus-oracle diagnostic gives
+a specific, cheap test of whether recurrence in a closed loop is load-bearing.
+The re-initialization protocol identifies a modeling choice normally settled by
+convenience as a first-order determinant of the recommendation. And evaluating a
+detector inside the policy it gates inverts the usual delay-minimization
+objective, which we show can point the wrong way.
+
+The contribution is therefore not that each protocol is unprecedented. It is that
+this particular set addresses the failure modes specific to prescriptive systems,
+that each is demonstrated rather than argued, and that together they were
+sufficient to reject four of our own claims.
 
 ## 3. The demonstration system
 
@@ -155,9 +183,11 @@ baseline is not conservative; it is a measurement of the wrong quantity.
 
 ### 4.2 Benchmark the loop against its own oracle
 
-**The failure mode.** Recurrent architectures are justified by the claim that
-re-deciding is better than deciding once. The claim is rarely tested, and it is
-not free: a loop costs implementation complexity, compute, and failure modes.
+**The failure mode.** Recurrent architectures rest on the premise that
+re-deciding beats deciding once. The premise is plausible enough that it is easy
+to leave untested, and it is not free: a loop costs implementation complexity,
+compute, and every failure mode that comes with running an optimizer in the
+control path.
 
 **The diagnostic.** Run the system's own action set once, at onset, with perfect
 foresight of the disruption. That one-shot oracle is an upper bound on any
@@ -277,9 +307,17 @@ by the tabular model and system performance does not depend on the graph model.
 
 ## 6. Turning the protocols on ourselves
 
-A methodology demonstrated only on claims it confirmed has not been tested. We
-therefore report four mechanistic explanations we advanced for the system's
-conditional behaviour, all of which these protocols rejected before publication.
+There is an obvious objection to everything above. Protocols proposed by the same
+authors who report the results those protocols validated are not independent
+evidence; a set of rules that happens to endorse its inventors' conclusions is
+worth little. The only answer we can offer is to show the protocols rejecting
+something we wanted to be true.
+
+We had a theory. It was elegant, it distinguished our system from a large
+adjacent literature, and it was wrong. We report it in full, along with the
+experiments that killed it, because the sequence is the strongest evidence in the
+paper that these protocols do work when pointed at a claim the authors are
+invested in.
 
 The system exhibits options that are net harmful on short disruptions and
 valuable on long ones, with breakevens between 33 and 69 hours. We proposed that
@@ -312,13 +350,13 @@ tested against data that could have gone the other way.
 
 ## 7. Discussion
 
-**On what generalizes.** None of the six protocols is specific to process
-engineering, to digital twins, or to resilience. Each addresses a failure mode
-that arises whenever a prescriptive system is compared against a baseline the
-evaluator also designed. We expect them to transfer to prescriptive systems in
-power dispatch, water network operation, and supply-chain control, and we note
-that in each of those domains the reported evaluations we surveyed satisfy some
-protocols and not others.
+**On what generalizes.** Nothing in these six protocols is about coconuts, about
+digital twins, or even about resilience. Each addresses a failure that becomes
+available the moment a prescriptive system is judged against a baseline its own
+evaluator designed, and that arrangement is close to universal in the field. We expect them to transfer to prescriptive systems in
+power dispatch, water network operation, and supply-chain control, Whether published evaluations in those domains
+satisfy the protocols is an empirical question we have not answered, and
+answering it would strengthen the case considerably.
 
 **On the cost of the protocols.** Five of the six are cheap. Comparator symmetry
 is an enumeration. The oracle diagnostic is one additional campaign arm. The
@@ -347,17 +385,58 @@ load-bearing for any claim in this paper. Finally, the protocols are demonstrate
 rather than proven: we show that each detected a real failure in one study, not
 that each is necessary or sufficient in general.
 
+### 8.1 The n equals one problem
+
+The most serious limitation is structural and no amount of care removes it. Six
+protocols are demonstrated on one system, one plant archetype, one disruption
+library. We have shown that each detected a real failure in this study. We have
+not shown that any of them detects failures in general, still less that the set is
+complete.
+
+Three considerations bear on how far the results travel, and we state them so a
+reader can weigh them rather than take our word.
+
+The failure modes are mechanism-driven rather than incidental. Comparator
+asymmetry misleads because the comparison then measures the difference in the
+withheld improvement, which is an argument about experimental design and not about
+coconut processing. The re-initialization result follows from a newly activated
+unit taking time to become useful, which is true of physical equipment generally.
+Detection latency pays under a hoarding policy because undetected time is
+accumulation time, which is a property of the policy rather than of the plant.
+Arguments of this shape suggest transfer, but they do not demonstrate it.
+
+Against that, the magnitudes are certainly system-specific. Whether asymmetry
+costs a factor of two, as it did here, or a few percent elsewhere, is not
+predictable from our data. A reader should take the existence of each failure mode
+as demonstrated and the size of each as one observation.
+
+The decisive test is one we have not run: an audit of published prescriptive-system
+evaluations, scoring each against the six protocols and reporting how many satisfy
+each. That would convert this paper from a demonstration into evidence about a
+field. We regard it as the natural successor to this work and note that the
+protocols were written to be applied from a published methods section, which is a
+design requirement rather than an accident.
+
 ## 9. Conclusions
 
-Prescriptive systems are evaluated by comparison, and the comparison is designed
-by the evaluator. We have shown, on a single study, that plausible evaluation
-choices produced an effect estimate wrong by a factor of two, a decision threshold
-wrong by a factor of three, and a detection result with the wrong sign. Six
-protocols detected each of these, and rejected four of our own mechanistic claims
-besides. The resilience result they support, a 0.244 improvement in the 72-hour
-resilience integral for runtime topology reconfiguration under typhoon-calibrated
-disruption, is stated with more confidence than it would otherwise deserve,
-precisely because the protocols were given the opportunity to reject it.
+Prescriptive systems are judged by comparison, and the comparison belongs to the
+person doing the judging. Within a single study, ordinary and defensible choices
+about that comparison gave us an effect estimate wrong by a factor of two, a
+decision threshold wrong by a factor of three, and a detection result carrying the
+wrong sign. None of the three announced itself. Each was found only because
+something in the protocol forced the question.
+
+That is the argument for the six protocols assembled here, and it is worth being
+clear about how modest a claim it is. We have not proved them necessary, we have
+not proved them sufficient, and we have demonstrated them on one system. What we
+can say is that they were enough to catch three errors we had already made, and
+enough to reject four explanations we would have preferred to keep.
+
+The resilience result that survived, a 0.244 improvement in the 72-hour resilience
+integral for runtime topology reconfiguration under typhoon-calibrated disruption,
+is the least interesting sentence in this paper. It is also the one we trust,
+which is the entire point: it is not a stronger number than we started with, but
+it is a number that was given every reasonable opportunity to be smaller.
 
 ## Data and code availability
 
