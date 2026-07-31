@@ -10,27 +10,28 @@ register of what was tested and what failed is `thesis/reframe_status.md`.*
 
 Prescriptive digital twins are increasingly proposed as resilience
 infrastructure: systems that observe a disruption and recommend a response.
-Whether such a system works is an empirical question, and the answer depends
-entirely on how it is evaluated. We argue that evaluation practice for
-prescriptive systems is immature in ways that produce confidently wrong answers,
-and we develop six protocols that detect the specific failures. Each is
-demonstrated on a reactive digital twin that reconfigures the topology of an
-integrated coconut processing complex under typhoon-calibrated disruption, across
-2,000 pre-registered paired Monte-Carlo scenarios. The protocols are: enforce
-comparator symmetry, because granting the baseline an improvement withheld from
-the treated arm manufactured a false negative in our own study, 0.117 against a
-true 0.241 on identical scenarios; benchmark a closed loop against its own
-one-shot perfect-foresight oracle, because a loop that cannot beat it is not
-earning its complexity; bound the continuous-control alternative rather than
-arguing about it, which here widened rather than narrowed the measured advantage,
-0.294 against a headline 0.244; pre-register, because the frozen analysis caught
-an unphysical modeling assumption rather than merely constraining the analyst;
-model re-initialization honestly, because hot-starting newly activated units
-understated a decision threshold three- to fourfold; and evaluate a detector
-inside the policy it gates, because detection delay proved net beneficial under a
-hoarding policy. We then turn the protocols on ourselves: four mechanistic explanations we
-proposed for the system's behaviour were falsified before publication, and we
-report them. The resilience result, a 0.244 improvement in the 72-hour resilience
+Whether one works is an empirical question, and the answer depends entirely on how
+it is evaluated. We argue that evaluation practice for prescriptive systems is
+immature in ways that produce confidently wrong answers, and we develop six
+protocols that detect the specific failures. Each is demonstrated on a reactive
+digital twin that reconfigures the topology of an integrated coconut processing
+complex under typhoon-calibrated disruption, across 2,000 pre-registered paired
+Monte-Carlo scenarios. The protocols require: comparator symmetry, which when
+violated in our own study manufactured a false negative of 0.117 against a true
+0.241; benchmarking a closed loop against its own one-shot perfect-foresight
+oracle; bounding the alternative one did not build, which here widened rather than
+narrowed the measured advantage, to 0.294 against a headline 0.244; pre-registering
+predictions, which caught an unphysical modeling assumption rather than merely
+constraining the analyst; modeling re-initialization honestly, since hot-starting
+newly activated units understated a decision threshold three- to fourfold; and
+evaluating a detector inside the policy it gates, since detection delay proved net
+beneficial under a hoarding policy. Two further tests follow. We turn the protocols
+on ourselves, reporting four mechanistic explanations of the system's behaviour
+that they falsified before publication. And we audit roughly thirty published
+prescriptive-system evaluations, finding recurrence justification and
+re-initialization reporting near-universally absent, bounding rare but demonstrably
+achievable, and detection and decision studied by communities that do not reference
+one another. The resilience result, a 0.244 improvement in the 72-hour resilience
 integral and a 57.7% reduction in time to 80% recovery, is the worked example
 rather than the contribution.
 
@@ -103,14 +104,54 @@ ones, and we make no claim about its prevalence. What we can report is that the
 failure modes below were live in our own study, that they were not obvious in
 advance, and that each changed a headline number materially.
 
-Two literatures inform specific protocols. The methodological argument for
-pre-registration originates in the empirical sciences as a guard against analyst
-degrees of freedom; Section 4.4 reports a different function, detection of model
-error. The practice of bounding an unbuilt alternative rather than constructing it
-is standard in optimization, where relaxations and oracles are routine, and
-Section 4.3 applies it to comparator design.
+### 2.1 What the learning community already established
 
-### 2.1 What is new here, and what is borrowed
+We are not the first to argue that evaluation quality is a research problem. The
+reinforcement-learning community has built a substantial methodological literature
+on exactly this: Henderson et al. (2018) showed that seeds, hyperparameters and
+codebase differences make reported results hard to interpret; Agarwal et al. (2021)
+showed that point estimates over few runs mislead and argued for interval estimates
+and robust aggregate statistics; Jordan et al. (2020) and Patterson et al. (2024)
+develop evaluation methodology and empirical design more broadly.
+
+Adjacent fields have supplied the harder evidence. Ferrari Dacrema et al. (2021),
+extending a 2019 analysis, could reproduce twelve of twenty-six neural
+recommendation papers with reasonable effort and found that eleven of those twelve
+were outperformed by conceptually simple methods, in several cases because the
+baselines had not been tuned. Comparable reality checks exist in metric learning
+(Musgrave et al., 2020) and in time-series forecasting. The pattern is consistent
+and uncomfortable: where evaluation is not disciplined, apparent progress is
+partly an artifact of the comparison.
+
+Reporting standards are the usual institutional answer. Medicine has CONSORT,
+PRISMA and TRIPOD; health-economic simulation has the ISPOR-SMDM guidance; machine
+learning has the NeurIPS checklist and, most recently, REFORMS (Kapoor et al.,
+2024), a thirty-two-question consensus instrument for machine-learning-based
+science. Resilience engineering and prescriptive decision support have no
+equivalent.
+
+### 2.2 What is different about prescriptive systems
+
+The prior art above is overwhelmingly concerned with *statistical* validity and
+*reproducibility*: how many seeds, which intervals, was the baseline tuned, can the
+result be regenerated. Those questions matter here too, and we answer them.
+
+But they are not the questions that cost us most. Four of our six protocols
+concern something the existing literature does not formalize, which we will call
+*decision-theoretic* validity: whether the comparison is measuring the decision the
+system actually makes. A perfectly reproducible experiment with well-tuned
+baselines and generous seed counts can still be asking the wrong question. It can
+compare a closed loop against a baseline without ever testing whether the loop
+needs to be closed. It can leave an alternative approach unbounded and merely
+asserted to be worse. It can let activated equipment contribute instantly, so the
+recommendation is evaluated in a world where reconfiguration is free. It can score
+a detector against a delay objective that its own downstream policy contradicts.
+
+None of those failures is statistical, and none is caught by a reproducibility
+checklist. They are failures of experimental design specific to systems that
+prescribe actions, and they are what this paper addresses.
+
+### 2.3 What is new here, and what is borrowed
 
 Not all six protocols are novel, and a paper that implied otherwise would deserve
 the scepticism it received. Two are adaptations of established practice to a new
@@ -348,15 +389,113 @@ supports, and because the sequence demonstrates the protocols functioning as
 intended: each rejection came from a falsifiable prediction stated in advance and
 tested against data that could have gone the other way.
 
-## 7. Discussion
+## 7. An audit of evaluation practice
+
+A demonstration on one system invites the objection that the protocols detect
+problems peculiar to that system. To test whether they discriminate more widely,
+we scored roughly thirty published studies of prescriptive decision-support
+systems for disruption response against the six protocols.
+
+### 7.1 Method and its limits
+
+Studies were drawn from six areas: power distribution restoration and
+reconfiguration, prescriptive digital twins in manufacturing and energy, water and
+gas network control, supply-chain disruption response, reinforcement learning for
+infrastructure operation, and process-systems resilience. Selection favoured recent
+and highly cited work that makes an explicit performance claim against a baseline,
+which is a deliberate bias: a paper claiming improvement is a paper whose
+comparison matters.
+
+Each protocol was scored SATISFIED, VIOLATED, or NOT REPORTED, and the third
+category carries most of the weight. Engineering venues impose page limits, relegate
+assumptions to appendices, and have no convention requiring authors to state, for
+instance, how a newly activated generator is initialized. **A study scored NOT
+REPORTED has not been found deficient. It has been found silent on a question the
+field does not currently ask.** We regard the distinction as the audit's central
+epistemic commitment, and we report the two categories separately everywhere.
+
+Two further limits bear on how much weight the counts carry. Roughly a quarter of
+the scores rest on abstracts and partial texts rather than full methods sections,
+and are marked provisional. And the corpus is not a random sample of the
+literature; it is a purposive sample biased toward performance-claim papers, which
+inflates apparent compliance with the first protocol.
+
+### 7.2 What the audit found
+
+The pattern is consistent across domains and is summarized rather than tabulated
+here, with the full per-study scoring released as supplementary material.
+
+**Comparator symmetry is widely attempted and rarely achieved.** Almost every study
+compares against something, and many comparators are strong: tuned inventory
+policies, metaheuristics, exact optimization, and in one case operator-designed
+heuristics with safety constraints. Symmetry in the stricter sense, in which the
+arms differ in exactly one factor, is uncommon. The recurring pattern in
+learning-based work is that the proposed method interacts with a high-fidelity
+nonlinear simulator while the optimization comparator solves a linearized or
+relaxed model, after which both are scored on the nonlinear model. At least one
+study states this asymmetry plainly; others do not.
+
+**Recurrence justification is essentially absent.** Among studies proposing closed
+loops, rolling horizons, or learned policies that act repeatedly, we found no case
+testing whether re-deciding outperforms deciding once. This is the largest gap the
+audit found, and it is a striking one: the premise that justifies the architecture
+is the premise least often examined.
+
+**Bounding an unbuilt alternative is rare but demonstrably achievable.** Three
+studies do it properly, and they are worth naming because they show the protocol is
+not a counsel of perfection. Zhang et al. (2022) report a perfect-foresight upper
+bound and state the fraction of it their controller attains. Jacob et al. (2024)
+benchmark against an exact mixed-integer conic optimum. A physics-informed
+reinforcement-learning study compares directly against an explicit oracle. Elsewhere
+the alternative is asserted to be inferior rather than bounded.
+
+**Pre-registration does not occur.** We found no instance in the corpus, which we
+expected. More interesting is a partial-credit category: several studies report
+confidence intervals over multiple seeds, repeat experiments to separate systematic
+effects from simulation noise, or report an honest negative about their own method's
+degradation under distribution shift. These are the practices pre-registration
+would formalize, and their presence suggests the field is closer to the standard
+than the absence of the word implies.
+
+**Re-initialization is almost never reported, and where reported is instantaneous.**
+Newly activated generators, storage, tie-switches, pumps and microgrids contribute
+at full capability in the step they are activated. Several studies state this
+explicitly as an assumption; most do not state it at all. No study in the corpus
+reports a sensitivity analysis on the choice. Given that varying this assumption
+moved a decision threshold by a factor of three in our own system, this is the
+protocol we expect to matter most in practice.
+
+**Detection-inside-policy could not be scored, and the reason is the finding.**
+Prescriptive resilience studies overwhelmingly assume the disruption is known:
+fault location given, onset observed, no detector in the loop. Meanwhile a separate
+fault-detection literature measures detection delay and false-alarm rate carefully,
+against a delay-minimization objective, decoupled from any downstream decision. The
+two halves of the problem are studied by different communities and joined by
+neither. That division is precisely what the protocol exists to surface.
+
+### 7.3 What the audit does and does not establish
+
+It establishes that the failure modes are not peculiar to our system. Four of the
+six protocols address questions that the surveyed literature does not routinely
+ask, and one addresses a question split across two communities that do not
+reference each other.
+
+It does not establish that the answers, had they been reported, would have been
+wrong. A study that does not report its re-initialization contract may have modeled
+it carefully. The audit measures what evaluations report, and reporting is a
+convention. What we can say is that a reader of these studies cannot currently tell,
+and that in the one case we examined closely, our own, the answer mattered by
+factors of two and three.
+
+## 8. Discussion
 
 **On what generalizes.** Nothing in these six protocols is about coconuts, about
 digital twins, or even about resilience. Each addresses a failure that becomes
 available the moment a prescriptive system is judged against a baseline its own
 evaluator designed, and that arrangement is close to universal in the field. We expect them to transfer to prescriptive systems in
-power dispatch, water network operation, and supply-chain control, Whether published evaluations in those domains
-satisfy the protocols is an empirical question we have not answered, and
-answering it would strengthen the case considerably.
+power dispatch, water network operation, and supply-chain control, Section 7 reports a first pass at whether published
+evaluations in those domains satisfy the protocols; the short answer is that four
+of the six address questions the literature does not routinely ask.
 
 **On the cost of the protocols.** Five of the six are cheap. Comparator symmetry
 is an enumeration. The oracle diagnostic is one additional campaign arm. The
@@ -371,7 +510,7 @@ does not hold. Both were retained because the protocols that produced them are t
 paper's subject, and a reader is entitled to see them working against the authors'
 interest.
 
-## 8. Limitations
+## 9. Limitations
 
 All results derive from a physics forward model; no plant data enter any claim,
 and a field trial is future work rather than a completed validation. The
@@ -385,7 +524,7 @@ load-bearing for any claim in this paper. Finally, the protocols are demonstrate
 rather than proven: we show that each detected a real failure in one study, not
 that each is necessary or sufficient in general.
 
-### 8.1 The n equals one problem
+### 9.1 The n equals one problem
 
 The most serious limitation is structural and no amount of care removes it. Six
 protocols are demonstrated on one system, one plant archetype, one disruption
@@ -410,14 +549,12 @@ costs a factor of two, as it did here, or a few percent elsewhere, is not
 predictable from our data. A reader should take the existence of each failure mode
 as demonstrated and the size of each as one observation.
 
-The decisive test is one we have not run: an audit of published prescriptive-system
-evaluations, scoring each against the six protocols and reporting how many satisfy
-each. That would convert this paper from a demonstration into evidence about a
-field. We regard it as the natural successor to this work and note that the
-protocols were written to be applied from a published methods section, which is a
-design requirement rather than an accident.
+Section 7 reports a first attempt at the decisive test: an audit of published
+prescriptive-system evaluations scored against the six protocols. That audit is
+preliminary, and its limitations are stated there, but it moves the evidence
+beyond a single system.
 
-## 9. Conclusions
+## 10. Conclusions
 
 Prescriptive systems are judged by comparison, and the comparison belongs to the
 person doing the judging. Within a single study, ordinary and defensible choices

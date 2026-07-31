@@ -457,3 +457,130 @@
              network optimization with genuine transients. The decision is
              control of flow, not disruption-triggered topology change.}
 }
+
+% ============================================================================
+% EVALUATION-METHODOLOGY PRIOR ART AND AUDIT CORPUS (added 2026-07-13)
+% For Paper 2 (RESS). The first block is the closest prior art and MUST be
+% cited: these authors made the general argument about evaluation quality in
+% adjacent fields, and a paper proposing evaluation protocols without engaging
+% them would be naive. The second block is the audit's positive exemplars.
+% Verification status per entry as before.
+% ============================================================================
+
+@inproceedings{henderson2018matters,
+  author    = {Henderson, Peter and Islam, Riashat and Bachman, Philip and Pineau, Joelle and Precup, Doina and Meger, David},
+  title     = {Deep Reinforcement Learning That Matters},
+  booktitle = {AAAI Conference on Artificial Intelligence},
+  year      = {2018},
+  doi       = {10.1609/aaai.v32i1.11694},
+  note      = {[VERIFY] Non-determinism, seeds, hyperparameters and codebase
+               differences make deep-RL results hard to interpret. The origin of
+               the modern evaluation-quality argument in learning research.}
+}
+
+@inproceedings{agarwal2021precipice,
+  author    = {Agarwal, Rishabh and Schwarzer, Max and Castro, Pablo Samuel and Courville, Aaron and Bellemare, Marc G.},
+  title     = {Deep Reinforcement Learning at the Edge of the Statistical Precipice},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2021},
+  note      = {[VERIFY] NeurIPS Outstanding Paper. Point estimates over few runs
+               mislead; advocates interval estimates and robust aggregate
+               metrics. Directly relevant to our reporting of confidence
+               intervals throughout.}
+}
+
+@inproceedings{jordan2020evaluating,
+  author    = {Jordan, Scott M. and Chandak, Yash and Cohen, Daniel and Zhang, Mengxue and Thomas, Philip S.},
+  title     = {Evaluating the Performance of Reinforcement Learning Algorithms},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2020},
+  note      = {[VERIFY]}
+}
+
+@article{patterson2024empirical,
+  author  = {Patterson, Andrew and Neumann, Samuel and White, Martha and White, Adam},
+  title   = {Empirical Design in Reinforcement Learning},
+  journal = {Journal of Machine Learning Research},
+  year    = {2024},
+  note    = {[VERIFY]}
+}
+
+@article{dacrema2021troubling,
+  author  = {Ferrari Dacrema, Maurizio and Boglio, Simone and Cremonesi, Paolo and Jannach, Dietmar},
+  title   = {A Troubling Analysis of Reproducibility and Progress in Recommender Systems Research},
+  journal = {ACM Transactions on Information Systems},
+  volume  = {39},
+  number  = {2},
+  pages   = {20},
+  year    = {2021},
+  doi     = {10.1145/3434185},
+  note    = {[VERIFY] Extends the RecSys 2019 best-paper analysis. Of 26 papers,
+               12 were reproducible with reasonable effort, and 11 of those 12
+               were beaten by conceptually simple methods. The strongest
+               quantified evidence that weak baselines produce phantom progress,
+               and the closest analogue for our comparator-symmetry protocol.}
+}
+
+@inproceedings{musgrave2020reality,
+  author    = {Musgrave, Kevin and Belongie, Serge and Lim, Ser-Nam},
+  title     = {A Metric Learning Reality Check},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  year      = {2020},
+  note      = {[VERIFY] Unfair comparisons via architecture and augmentation
+               changes; improvements over time marginal at best.}
+}
+
+@article{kapoor2024reforms,
+  author  = {Kapoor, Sayash and others},
+  title   = {{REFORMS}: Consensus-based Recommendations for Machine-learning-based Science},
+  journal = {Science Advances},
+  volume  = {10},
+  number  = {18},
+  pages   = {eadk3452},
+  year    = {2024},
+  doi     = {10.1126/sciadv.adk3452},
+  note    = {[VERIFY author list] A 32-question checklist from 19 researchers
+               across disciplines. Cited as the reporting-standard antecedent
+               closest to what we propose, alongside CONSORT, PRISMA and TRIPOD
+               in medicine and the ISPOR-SMDM simulation guidance.}
+}
+
+% ---- audit positive exemplars: proof the protocols are achievable ----
+
+@article{zhang2022curriculum,
+  author  = {Zhang, Xiangyu and Eseye, Abinet Tesfaye and Knueven, Bernard and Liu, Weijia and Reynolds, Matthew and Jones, Wesley},
+  title   = {Curriculum-based Reinforcement Learning for Distribution System Critical Load Restoration},
+  journal = {IEEE Transactions on Power Systems},
+  volume  = {38},
+  number  = {5},
+  year    = {2022},
+  doi     = {10.1109/TPWRS.2022.3209919},
+  note    = {[VERIFY] POSITIVE EXEMPLAR for protocol 3: reports a
+               perfect-foresight MPC upper bound and states the achieved
+               fraction of it, with 95% confidence intervals over 504 test
+               scenarios. Also the clearest documented instance of the
+               plant-model asymmetry discussed in Section 2, and the authors
+               disclose it.}
+}
+
+@article{jacob2024outage,
+  author  = {Jacob, Roshni Anna and Paul, Steve and Chowdhury, Souma and Gel, Yulia R. and Zhang, Jie},
+  title   = {Real-time outage management in active distribution networks using reinforcement learning over graphs},
+  journal = {Nature Communications},
+  volume  = {15},
+  pages   = {4766},
+  year    = {2024},
+  doi     = {10.1038/s41467-024-49207-y},
+  note    = {[VERIFY] POSITIVE EXEMPLAR for protocol 3: benchmarks against an
+               exact MISOCP optimum rather than against heuristics alone.}
+}
+
+@inproceedings{marchesini2025rl2grid,
+  author    = {Marchesini, Enrico and Donnot, Benjamin and Crozier, Constance and Dytham, Ian and Merz, Christian and Schewe, Lars and Westerbeck, Nico and Wu, Cathy and Marot, Antoine and Donti, Priya L.},
+  title     = {{RL2Grid}: Benchmarking Reinforcement Learning in Power Grid Operations},
+  year      = {2025},
+  note      = {[VERIFY] POSITIVE EXEMPLAR for protocol 1: benchmarks learned
+               policies against operator-designed heuristics with safety
+               constraints, an unusually strong and operationally realistic
+               comparator.}
+}
