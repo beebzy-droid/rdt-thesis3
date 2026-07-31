@@ -10,32 +10,29 @@ register of what was tested and what failed is `thesis/reframe_status.md`.*
 
 Prescriptive digital twins are increasingly proposed as resilience
 infrastructure: systems that observe a disruption and recommend a response.
-Whether one works is an empirical question, and the answer depends entirely on how
-it is evaluated. We argue that evaluation practice for prescriptive systems is
-immature in ways that produce confidently wrong answers, and we develop six
-protocols that detect the specific failures. Each is demonstrated on a reactive
-digital twin that reconfigures the topology of an integrated coconut processing
-complex under typhoon-calibrated disruption, across 2,000 pre-registered paired
-Monte-Carlo scenarios. The protocols require: comparator symmetry, which when
-violated in our own study manufactured a false negative of 0.117 against a true
-0.241; benchmarking a closed loop against its own one-shot perfect-foresight
-oracle; bounding the alternative one did not build, which here widened rather than
-narrowed the measured advantage, to 0.294 against a headline 0.244; pre-registering
-predictions, which caught an unphysical modeling assumption rather than merely
-constraining the analyst; modeling re-initialization honestly, since hot-starting
-newly activated units understated a decision threshold three- to fourfold; and
-evaluating a detector inside the policy it gates, since detection delay proved net
-beneficial under a hoarding policy. Two further tests follow. We turn the protocols
-on ourselves, reporting four mechanistic explanations of the system's behaviour
-that they falsified before publication. And we audit roughly thirty published
-prescriptive-system evaluations, finding recurrence justification and
-re-initialization reporting near-universally absent, bounding rare but demonstrably
-achievable, and detection and decision studied by communities that do not reference
-one another. A blind two-rater subsample gives a pooled Cohen's kappa of 0.818,
-with disagreements falling almost entirely on degree of compliance rather than on
-whether a practice was a problem. The resilience result, a 0.244 improvement in the 72-hour resilience
-integral and a 57.7% reduction in time to 80% recovery, is the worked example
-rather than the contribution.
+Whether one works depends entirely on how it is evaluated. We argue that
+evaluation practice for such systems is immature in ways that produce confidently
+wrong answers, and develop six protocols that detect the specific failures. Each is demonstrated on a reactive
+digital twin that reconfigures the topology of a coconut processing complex under
+typhoon-calibrated disruption, across 2,000 pre-registered paired Monte-Carlo
+scenarios. The protocols require comparator symmetry, which when violated in our
+own study manufactured a false negative of 0.117 against a true 0.241;
+benchmarking a closed loop against its own one-shot perfect-foresight oracle;
+bounding the alternative one did not build, which here widened rather than
+narrowed the measured advantage; pre-registering predictions, which caught an
+unphysical modeling assumption rather than merely constraining the analyst;
+modeling re-initialization honestly, since hot-starting newly activated units
+understated a decision threshold three- to fourfold; and evaluating a detector
+inside the policy it gates, since detection delay proved net beneficial under a
+hoarding policy. Two further tests follow. We turn the protocols on ourselves,
+reporting four explanations of our system's behaviour that they falsified before
+publication. And we audit roughly thirty published evaluations, finding recurrence
+justification and re-initialization reporting near-universally absent, and
+detection and decision studied by communities that do not reference one another; a
+blind two-rater subsample gives a pooled Cohen's kappa of 0.818, with
+disagreements falling on degree of compliance rather than on whether a practice
+was a problem. The resilience result the protocols support is
+the worked example rather than the contribution.
 
 **Keywords:** resilience evaluation; prescriptive analytics; digital twin;
 comparator design; pre-registration; process systems.
@@ -210,8 +207,9 @@ is granted to the baseline and withheld from the treated arm, the comparison
 measures the difference in that improvement rather than the effect of the
 treatment.
 
-**What we measured.** Our static comparator was strengthened from a passive
-policy to an onset-scheduled policy with oracle knowledge of disruption onset.
+**What we measured** (Figure 1). Our static comparator was strengthened from a
+passive policy to an onset-scheduled policy with oracle knowledge of disruption
+onset.
 Against that hardened baseline the reactive twin scored 0.117, CI [0.093, 0.142].
 The result was a formal positive but weak enough to reject the practical claim.
 The reactive arm, however, was still running an inferior continuous inventory
@@ -424,8 +422,9 @@ inflates apparent compliance with the first protocol.
 
 ### 7.2 What the audit found
 
-The pattern is consistent across domains and is summarized rather than tabulated
-here, with the full per-study scoring released as supplementary material.
+The pattern is consistent across domains (Figure 2) and is summarized rather than
+tabulated here, with the full per-study scoring released as supplementary
+material.
 
 **Comparator symmetry is widely attempted and rarely achieved.** Almost every study
 compares against something, and many comparators are strong: tuned inventory
@@ -638,6 +637,12 @@ integral for runtime topology reconfiguration under typhoon-calibrated disruptio
 is the least interesting sentence in this paper. It is also the one we trust,
 which is the entire point: it is not a stronger number than we started with, but
 it is a number that was given every reasonable opportunity to be smaller.
+
+---
+*Figures (2): Figure 1, comparator hardening across five evaluation designs, in
+which a stronger but asymmetric baseline halves the measured effect (repo F7).
+Figure 2, consensus audit scores by protocol, with the reliability caveat of
+Section 7.4 stated in the caption (repo F10).*
 
 ## Data and code availability
 

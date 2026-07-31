@@ -202,8 +202,21 @@ def f7():
     ax.text(5.45, 0.152, "target", fontsize=6); ax.text(5.45, 0.102, "formal", fontsize=6)
     ax.set_xticks(range(6)); ax.set_xticklabels(labels, fontsize=6.5)
     ax.set_ylabel("pooled ΔR (95% CI)")
-    ax.set_title("Comparator hardening: symmetry, not strength, decides "
-                 "(bar 3 = false negative from asymmetric arms)", fontsize=8)
+    # Annotate the false negative directly. This figure carries the paper's
+    # central argument, so the reader should not have to reconstruct it from the
+    # caption: bar 3 is a STRONGER baseline than bar 2 and yields a LOWER
+    # measured effect, purely because the arms were asymmetric.
+    ax.annotate("stronger baseline,\nasymmetric arms:\nmeasured effect halves",
+                xy=(2, 0.1168), xytext=(2.55, 0.055), fontsize=6.2,
+                color="#d55e00", ha="left",
+                arrowprops=dict(arrowstyle="->", lw=0.9, color="#d55e00"))
+    ax.annotate("same system,\nsame scenarios,\nsymmetry restored",
+                xy=(3, 0.2410), xytext=(2.62, 0.283), fontsize=6.2,
+                color="#0173b2", ha="left",
+                arrowprops=dict(arrowstyle="->", lw=0.9, color="#0173b2"))
+    ax.set_ylim(0, 0.33)
+    ax.set_title("Comparator symmetry, not comparator strength, decides the answer",
+                 fontsize=8.5)
     save(fig, "F7_hardening")
 
 
@@ -272,3 +285,45 @@ if __name__ == "__main__":
     print("rendering:")
     f1_f2_f3(camp, cap); f4(camp, a1); f5(); f6(); f7(); f8(); f9_n2_onset()
     print(f"figures -> {FIG.resolve()}")
+
+
+def f10_audit():
+    """Figure 2 of the RESS methodology paper: the audit's consensus scores, with
+    the reliability split made visible.
+
+    Design decision worth recording: the bars are ordered so that the codes the
+    audit's conclusions rest on (Violated, Not reported) sit together, and the
+    caption reports that inter-rater agreement was near-perfect on those codes and
+    weaker on the Satisfied/Partial boundary. Showing a clean ranking of papers
+    would overstate what a kappa of 0.818 with S/P disagreements supports.
+    """
+    import pathlib
+    f = pathlib.Path("audit/scores_consensus.csv")
+    if not f.exists():
+        print("  F10 skipped (no audit/scores_consensus.csv)")
+        return
+    d = pd.read_csv(f, keep_default_na=False)
+    protos = ["P1", "P2", "P3", "P4", "P5", "P6"]
+    names = ["P1 comparator\nsymmetry", "P2 recurrence\njustification",
+             "P3 bounding the\nunbuilt alternative", "P4 pre-\nregistration",
+             "P5 re-initial-\nization", "P6 detection\nin its policy"]
+    codes = ["S", "P", "V", "NR", "NA"]
+    col = {"S": "#029e73", "P": "#94d2bd", "V": "#d55e00",
+           "NR": "#bbbbbb", "NA": "#eeeeee"}
+    fig, ax = plt.subplots(figsize=(6.4, 3.2))
+    bottom = np.zeros(len(protos))
+    for c in codes:
+        vals = np.array([(d[p] == c).sum() for p in protos], dtype=float)
+        ax.bar(range(len(protos)), vals, bottom=bottom, color=col[c],
+               edgecolor="white", linewidth=0.6,
+               label={"S": "satisfied", "P": "partial", "V": "violated",
+                      "NR": "not reported", "NA": "not applicable"}[c])
+        bottom += vals
+    ax.set_xticks(range(len(protos)))
+    ax.set_xticklabels(names, fontsize=6.2)
+    ax.set_ylabel(f"studies (n = {len(d)})")
+    ax.legend(fontsize=6, ncol=5, loc="upper center",
+              bbox_to_anchor=(0.5, -0.22), frameon=False)
+    ax.set_title("Audit of published evaluations: what is reported, and what is not",
+                 fontsize=8.5)
+    save(fig, "F10_audit_scores")
