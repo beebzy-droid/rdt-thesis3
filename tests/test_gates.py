@@ -253,3 +253,16 @@ def test_cold_start_is_opt_in_and_adds_one_state():
     i = cold.state_names.index("a_solar")
     assert cold.state_names[i - 1] == "x_dryB_4"
     assert cold.state_names[i + 1] == "I_copra"
+
+
+def test_interrater_handles_NA_code():
+    """The audit code "NA" (not applicable) must survive CSV parsing. pandas
+    treats NA as a missing value by default, which would silently blank the P6
+    column, where NA is the dominant code. Guards a bug found in self-test."""
+    import pandas as pd, pathlib
+    f = pathlib.Path("audit/scores_rater1_SEALED.csv")
+    if not f.exists():
+        return
+    d = pd.read_csv(f, keep_default_na=False)
+    assert (d["P6"] == "NA").any(), "NA codes lost in parsing"
+    assert not d["P6"].isna().any()

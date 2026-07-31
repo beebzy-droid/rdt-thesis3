@@ -1,0 +1,8 @@
+paper_id,citation,doi_or_url,P1,P2,P3,P4,P5,P6,comments
+A1,"Zhang et al. 2022, Curriculum-based RL for Distribution System Critical Load Restoration, IEEE Trans. Power Systems 38(5)",10.1109/TPWRS.2022.3209919,,,,,,,
+A2,"Jacob et al. 2024, Real-time outage management in active distribution networks using RL over graphs, Nature Communications 15:4766",10.1038/s41467-024-49207-y,,,,,,,
+C1,"Hajgato et al., Deep RL for Real-Time Optimization of Pumps in Water Distribution Systems",arXiv:2010.06460,,,,,,,
+D1,"Dynamic Optimization of Multi-Echelon Supply Chain Inventory Policies Under Disruptive Scenarios, Symmetry 17(12):2078",10.3390/sym17122078,,,,,,,
+D2,"Risk-averse supply chain management via robust reinforcement learning, Computers & Chemical Engineering 2024",S0098135424003302,,,,,,,
+E2,"Topology-Aware Graph RL for Voltage-Reactive Power Control in Grid-Connected Microgrids, Electricity 7(2):60",10.3390/electricity7020060,,,,,,,
+E3,"Physics-Informed RL with Gibbs Priors for Topology Control in Power Grids",arXiv:2604.01830,,,,,,,
