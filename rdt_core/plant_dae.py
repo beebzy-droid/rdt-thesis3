@@ -95,6 +95,21 @@ class PlantParams:
     gate_band: float = 5_000.0      # kg, smooth full-tank press throttle band
     # --- buffer draw time constants [hr] ---
     tau_buf: float = 8.0
+    # --- shelf life of stored copra (perishability contract, added 2026-07-13) --
+    # tau_shelf = 0.0 reproduces the historical model exactly: stored copra keeps
+    # indefinitely. Any positive value adds a first-order loss I_copra/tau_shelf
+    # representing the fraction of stored stock crossing the aflatoxin-risk
+    # moisture threshold per unit time.
+    #
+    # Evidence for the scale: FAO (y1390e) requires sun- or hot-air-dried copra to
+    # reach <=12% moisture uniformly to prevent aflatoxin, and <=16% for
+    # smoke-dried; NRI/PCA storage trials on Philippine consignments find copra
+    # equilibrates to 5-7% within roughly two weeks, with Aspergillus flavus
+    # contamination establishing inside that window. Regulatory ceilings are
+    # 20 ppb (US FDA, coconut products) and 20 ug/kg aflatoxin B1 (EU, copra
+    # by-product). A two-week mean safe residence is therefore the defensible
+    # planning value, and it is swept rather than asserted.
+    tau_shelf: float = 0.0          # hr; 0 disables decay [verify: PCA/FAO]
     tau_tank: float = 6.0
     tau_surge: float = 2.0
     K_sat: float = 5000.0           # carbonizer draw saturation const [kg]
@@ -180,13 +195,19 @@ def build_plant_dae(p: PlantParams):
     F_evap_feed = ca.fmin(I[3] / p.tau_surge, p.cap_evap)
     F_evap_water = F_evap_feed - F_conc
 
-    dI = ca.vertcat(F_copra + F_buy - F_press,
+    # Perishability: stored copra degrades toward the aflatoxin threshold. The
+    # loss is routed to F_sinks so the mass balance stays closed and the existing
+    # closure test still passes.
+    _ts = float(getattr(p, "tau_shelf", 0.0))
+    F_decay = (I[0] / _ts) if _ts > 0.0 else ca.SX(0)
+    dI = ca.vertcat(F_copra + F_buy - F_press - F_decay,
                     F_oil + oil_wet - F_refine - F_crude_sale,
                     F_shell - F_carb,
                     F_ccw_in - F_evap_feed)
 
     F_sinks = (F_husk + F_meal + F_vco + F_ref_loss + F_char + F_offgas
-               + F_conc + F_evap_water + F_crude_sale + F_spoil + cake_wet)
+               + F_conc + F_evap_water + F_crude_sale + F_spoil + cake_wet
+               + F_decay)
 
     _tau_cc = max(1e-6, float(getattr(p, "tau_com_crude", 6.0)))
     _da_cr = [(1.0 - a_cr) / _tau_cc] if cold_crude else []
