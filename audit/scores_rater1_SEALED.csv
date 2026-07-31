@@ -1,7 +1,7 @@
 paper_id,P1,P2,P3,P4,P5,P6,confidence,basis
 A1,V,NR,S,P,V,NA,high,"full-text methods read; RL on OpenDSS vs MPC on LinDistFlow, disclosed; perfect-foresight bound reported; 95% CIs; Assumption A.3 states DERs ready at t=1, ramping not considered"
 A2,P,NA,S,P,V,NA,high,"full-text methods read; MISOCP/BPSO/MLP-RL comparators on same OpenDSS eval but relaxed-model optimization not flagged; exact MISOCP optimum reported; single-step so no recurrence; grid-forming DERs as ideal sources activated instantly"
-C1,P,NR,P,NR,V,NA,medium,"Nelder-Mead and differential evolution baselines; near-optimal per-step reference but no temporal oracle; pumps deliver commanded speed instantly"
+C1,V,NA,P,NR,V,NA,high,"CORRECTED after full read. P1 V not P: the Nelder-Mead baseline is also the REWARD STANDARD used to train the agent, so the arms are not independent; Hu et al. 2023 Systems 11(2):56 state the method takes Nelder-Mead pump speeds as the optimal setting which makes the DRL results depend largely on Nelder-Mead. P2 NA not NR: single-step scheduling, no recurrence to justify. P5 V: pumps deliver commanded speed instantly, no start-up ramp."
 D1,S,NR,NR,NR,V,NA,medium,"(s,S) and (S,T) grid-search tuned, shared cost params and demand dynamics across arms; replenishment resumes at full capacity when disruption ends"
 D2,P,NR,NR,P,NR,NA,medium,"robust RL vs conventional RL vs order-up-to; honest negative reported about Q-learning degradation under deviation"
 E2,S,NR,NR,P,NR,NA,medium,"identical action space, reward and PPO objective vs MLP-PPO baseline; mean and std reported"

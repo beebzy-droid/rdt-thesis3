@@ -473,7 +473,47 @@ against a delay-minimization objective, decoupled from any downstream decision. 
 two halves of the problem are studied by different communities and joined by
 neither. That division is precisely what the protocol exists to surface.
 
-### 7.3 What the audit does and does not establish
+### 7.3 A failure mode the rubric did not anticipate
+
+One study returned a result the instrument was not built to catch, and it is worth
+reporting because it generalizes. A deep reinforcement-learning controller for pump
+scheduling is compared against classical optimizers, which is a strong comparator
+choice. But the optimizer's output is also the reward standard the agent is trained
+against: the agent is taught to reproduce the baseline's decisions and then scored
+against the baseline. A later paper in the same field states this directly, noting
+that taking the optimizer's pump speeds as the optimal setting makes the learned
+results depend largely on that optimizer.
+
+The reported figure, efficiency above 0.98 relative to the best-performing
+baseline, is therefore close to tautological rather than close to optimal. A
+student cannot substantially outscore the examiner who wrote the answer key. The
+contribution of the work is real and lies elsewhere, in a speedup of roughly two
+times with a controller that runs from measurements alone, but the accuracy
+comparison is not independent evidence.
+
+We flag this because it is easy to miss. The baseline is genuinely strong, the
+reporting is otherwise careful, and nothing in the comparison looks unfair until
+one asks where the training signal came from. The scoring rubric has been extended
+to name this case, and it is a reminder that a checklist is only ever a record of
+the failures its authors have already encountered.
+
+### 7.4 Single rater, and the instrument for a second
+
+The scoring reported here was performed by one rater, which is a real limitation:
+several of these judgements require reading a methods section for what it does not
+say, and reasonable readers will differ. We have not attempted to conceal this by
+scoring twice ourselves, which would measure the stability of one person's
+judgement while appearing to measure agreement between two.
+
+Instead we release the instrument. The rubric, a blind scoring sheet, the
+first-rater scores sealed until a second rating is recorded, and a script computing
+Cohen's kappa with bootstrap intervals are all in the public repository. The
+protocol commits in advance to the outcome that would invalidate the audit: a kappa
+below roughly 0.4 would indicate the rubric is not operational enough to publish,
+and the audit would be revised before being reported rather than after. Applying
+protocol four to our own instrument seemed the minimum consistency this paper owes.
+
+### 7.5 What the audit does and does not establish
 
 It establishes that the failure modes are not peculiar to our system. Four of the
 six protocols address questions that the surveyed literature does not routinely

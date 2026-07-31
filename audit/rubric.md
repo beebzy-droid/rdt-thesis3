@@ -43,9 +43,18 @@ the treatment?*
 - **NR** A baseline exists but neither arm is described in sufficient detail.
 - **NA** No comparative performance claim is made.
 
-*Common case worth flagging:* a learned method interacting with a nonlinear
-simulator, compared against an optimizer solving a linearized or relaxed model,
-with both scored on the nonlinear model. This is **V**.
+*Two common cases worth flagging, both scored* **V**:
+
+1. A learned method interacting with a nonlinear simulator, compared against an
+   optimizer solving a linearized or relaxed model, with both scored on the
+   nonlinear model.
+2. **The baseline doubles as the training signal.** The proposed method is
+   trained toward the baseline's outputs, or rewarded for matching them, and is
+   then evaluated against that same baseline. The comparison is not independent:
+   the treated arm cannot substantially exceed its own teacher, so a reported
+   ratio near unity is close to tautological. This case was added after reading a
+   study in the audit corpus where it occurs, and it is easy to miss because the
+   baseline is genuinely strong and the reporting is otherwise careful.
 
 ## P2. Recurrence justification
 
