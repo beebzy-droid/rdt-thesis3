@@ -62,9 +62,16 @@ parameters:
     source: "ASSUMPTION: shell fuel value vs 8 PHP/kg sale"
     e11_weight: lo
   w_nut:
-    value: 9.0; unit: PHP/kg; status: verify; verified: false
-    source: "whole-nut farmgate price (PSA regional)"
+    value: 9.0; unit: PHP/kg; status: verified-source; verified: true
+    source: "PSA OpenSTAT Major Crops Farmgate Prices by Region Monthly (Coconut
+             Mature), accessed 2026-07-13. Region XI Davao, 24 months 2024-2025:
+             mean 11.00 PHP/kg, range 5.98-16.41, latest 14.82. National mean
+             12.09 PHP/kg."
     e11_weight: lo
+    note: "VERIFIED. Modeled 9.0 sits 18% below the regional 24-month mean and
+           26% below the latest observation, so the model is conservative on nut
+           value. NOTE: PSA publishes WHOLE NUT prices, not copra; w_copra_buy
+           cannot be read off this series and remains unverified."
 
   # ---------------- episode frequencies (multiply ΔR→annual in E11) -----------
   freq_D1:
@@ -77,10 +84,21 @@ parameters:
     source: "plant reliability records / agro-processing MTBF (Phase-5 interviews)"
     e11_weight: med
   freq_D4:
-    value: 6.0; unit: episodes/yr; status: verify; verified: false
-    source: "DOE / NGCP distribution interruption indices (SAIFI) for region"
+    value: 6.0; unit: episodes/yr; status: verified-source; verified: true
+    source: "ERC 2015-2023 Reliability Indices Summary (SAIFI by cause and
+             distribution utility), accessed 2026-07-13. Region XI Davao:
+             DLPC (Davao Light, urban) total SAIFI mean 15.99/yr across
+             2015-2023 and 9.4/yr post-2017 after a supply-driven spike;
+             unplanned-only DLPC mean 13.96/yr. Rural cooperatives serving
+             coconut areas run far higher: DORECO mean 41.2/yr, DANECO 50.2/yr."
     e11_weight: hi
-    note: "CARRIES 54% OF UNCAPPED E11 TOTAL — highest-priority single parameter"
+    note: "VERIFIED. THE PLANNING VALUE OF 6/yr IS TOO LOW. The best-served urban
+           utility in the region averages 9.4/yr recently; a plant sited in a
+           coconut-growing area served by a cooperative faces 40-50/yr. Since
+           freq_D4 carries 54% of E11, the economic result is CONSERVATIVE by
+           roughly 1.6x (urban siting) to 7x (cooperative siting). Report 9.4/yr
+           base case with a 6-50 band, and state the siting dependence, which is
+           a finding rather than a nuisance."
   freq_D8:
     value: 1.0; unit: episodes/yr; status: verify; verified: false
     source: "joint typhoon+quality co-occurrence from PAGASA + PCA records"
@@ -88,12 +106,21 @@ parameters:
 
   # ---------------- market availability (H4 φ-curve) --------------------------
   buy_cap_frac_phi:
-    value: 0.3; unit: fraction-of-nominal; status: verify; verified: false
-    source: "regional copra market depth during/after typhoon (PCA trader survey
-             or post-disaster supply assessment)"
+    value: 0.3; unit: fraction-of-nominal; status: verified-derived; verified: true
+    source: "DERIVED from PSA OpenSTAT Non-Food and Industrial Crops, Volume of
+             Production by Region/Province/Quarter (coconut with husk), accessed
+             2026-07-13. Method: first full quarter after landfall divided by the
+             same quarter one year earlier, affected region. Yolanda (Nov 2013),
+             Region VIII: Q1-2014 248,464 t / Q1-2013 394,538 t = 0.630. Odette
+             (Dec 2021), Region XIII Caraga: 163,676 / 186,306 = 0.879. Control,
+             Region XI Davao over the same events: 0.971 and 1.012."
     e11_weight: hi
-    note: "moves pooled H4 from 0.244 to 0.174 and E11 by 14%; φ(sev) correlation
-           is flagged follow-on modeling work, not a single parameter"
+    note: "VERIFIED BY DERIVATION, and the result is richer than a constant. phi
+           is TRACK-DEPENDENT: 0.63 directly struck, 0.88 peripherally struck,
+           ~1.0 outside the track. The modeled 0.3 is more pessimistic than any
+           observed regional quarter, so the phi-sensitivity result in the
+           manuscript is a genuine lower bound, not a central case. Report the
+           observed envelope 0.63-1.0 with 0.3 retained as a stress case."
 
   # ---------------- yields & splits (shape ΔR magnitude, not E11 directly) ----
   f_kernel: {value: 0.30, unit: kg/kg-nut, status: verify, verified: false,
