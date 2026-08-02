@@ -53,3 +53,44 @@ The `freq_D4` figures are total SAIFI summed across the ERC's four cause
 categories (all-other, scheduled, power-supply, major-storm). Unplanned-only totals
 excluding scheduled interruptions are also reported, since a scheduled outage is
 not a disruption the twin must react to.
+
+## Economic consequence, recomputed
+
+`scripts/economics_verified.py` recomputes E11 under the verified parameters. As a
+check on the recomputation, the as-modelled row reproduces the published figure of
+PHP 100.7 M/yr exactly.
+
+| Utility-outage frequency (siting) | phi = 0.30 (stress) | phi unconstrained | D4 share |
+|---|---|---|---|
+| as-modelled, 6.0/yr | 71.9 M | 100.7 M | 51% |
+| urban, DLPC post-2017, 9.24/yr | 91.8 M | 128.7 M | 62% |
+| urban, DLPC unplanned-only, 13.96/yr | 120.9 M | 169.4 M | 71% |
+| cooperative, DORECO, 41.2/yr | 288.6 M | 404.7 M | 88% |
+| cooperative, DANECO, 50.2/yr | 344.1 M | 482.4 M | 90% |
+
+Verified phi is 0.63 or above, so the right-hand column is the defensible case and
+the left is a stress test. Deliberately, no interpolation is performed between the
+two phi points the campaign actually provides; two points do not determine a curve,
+and a third invented number is exactly what the provenance ledger exists to prevent.
+
+**The published economics are conservative by a factor of 1.3 for urban siting and
+4.0 for cooperative siting.** That direction is the opposite of what a reader will
+assume about an author's own economic estimate, and it should be stated rather than
+left to be discovered.
+
+### A fragility the larger number exposes
+
+The utility-outage share of the total rises from 51% to 90% as the frequency moves
+from the planning value to the cooperative case. A result in which nine tenths of
+the benefit rests on a single parameter is fragile regardless of how well that
+parameter is sourced, because any error in it passes through almost undamped. This
+argues for reporting the siting cases as a band rather than promoting the largest,
+and for treating the urban figure as the headline, since it is the most
+conservative of the verified options.
+
+### What the verification does not fix
+
+Every peso figure scales linearly with V0, which depends on three prices that
+remain unverified. The **ratios between rows do not depend on V0** and are the
+defensible content of the table; the absolute levels remain indicative until the
+PCA price series is obtained.
