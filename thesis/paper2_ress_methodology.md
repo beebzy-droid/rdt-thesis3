@@ -427,6 +427,53 @@ acceptance bound, with zero safety-class constraint violations across the
 campaign. Selection latency is 4.7 ms and topology recompilation 3.1 ms, both
 orders of magnitude inside the cycle budget.
 
+### 5.1 The economics, and which way the error ran
+
+The system's economic case is the part of a study like this that a reader trusts
+least, and correctly so: it multiplies a simulated benefit by prices and event
+frequencies that authors typically assume. We treated those assumptions the way
+this paper treats everything else, by writing them into a provenance ledger whose
+strict gate fails while any figure remains uncited, and then checking them against
+public records.
+
+Two of the load-bearing assumptions could be verified. Utility-outage frequency was
+modeled at 6 per year; the national regulator's reliability indices for the plant's
+region give 9.2 per year for the best-served urban utility over the recent era, and
+41 to 50 per year for the rural cooperatives that serve coconut-growing areas.
+Market availability after a disruption was modeled at 0.30 of nominal; deriving it
+from national production records as the ratio of the first full quarter after a
+typhoon landfall to the same quarter a year earlier gives 0.63 in a directly struck
+region and 0.88 in a peripherally struck one, with an off-track control region
+returning ratios near unity.
+
+Both assumptions were wrong in the same direction. Recomputing the annualized
+benefit at the verified values raises it by a factor of 1.3 for urban siting and
+4.0 for cooperative siting. **The published economics were conservative, not
+optimistic, which is the opposite of what a reader assumes about an author's own
+economic estimate.**
+
+Two things follow, and the second matters more than the first. The direction of a
+parameter error is reportable information: an author who has checked knows whether
+the headline understates or overstates, and a reader who has not checked can only
+assume the latter. And the larger figure exposes a fragility that the smaller one
+concealed, because the utility-outage share of the total rises from 51% to 90%
+across the siting range. A result resting nine tenths on a single parameter is
+fragile however well that parameter is sourced. We therefore report the band and
+take the urban case as the headline, which is the most conservative of the verified
+options, rather than promoting the largest number the evidence permits.
+
+We considered whether parameter-direction checking belongs as a seventh protocol
+and decided against it. It was not found by the six protocols catching a failure;
+it was found by building a provenance ledger and then doing the work. That is
+ordinary diligence rather than a detectable failure mode, and a protocol set is
+more useful for being short than for being complete.
+
+Three prices remain unverified, because the national statistics publish whole-nut
+farmgate values while the plant's economics turn on copra, the dried kernel at
+roughly four times the value density. Every peso figure therefore scales with an
+unverified quantity and is reported as indicative. The ratios between siting cases
+do not, and are the defensible content.
+
 We report one negative result about the system itself. Graph-attention screening
 does not generalize to reconfigurations absent from training: transfer is negative
 at every training-diversity level examined, degrades as diversity grows, and never
