@@ -14,6 +14,15 @@
 # cite a parameter whose verified flag is false. The [verify] register in
 # verify_register.md is the human-facing worklist derived from this file.
 
+# SOURCE TIERS (added 2026-07-13)
+#   primary    read from the compiling agency's own table or publication
+#   secondary  agency figure transcribed by a named outlet with a date
+#   proxy      a different but documented series, with its basis difference stated
+#   derived    computed from a primary series by a stated method
+# A secondary or proxy value is usable and citable; it is not equivalent to
+# primary and the ledger records which is which so that nothing is promoted by
+# accident.
+
 meta:
   created: 2026-07-04
   rule: "no unverified parameter enters a manuscript claim (lifecycle 9.2)"
@@ -23,15 +32,47 @@ parameters:
 
   # ---------------- product prices (enter every ΔR via value-weighted P(τ)) ----
   w_vco:
-    value: 200.0; unit: PHP/kg; status: verify; verified: false
-    source: "PCA / DA-Bantay Presyo VCO farmgate-to-mill price monitor"
+    value: 200.0; unit: PHP/kg; status: UNVERIFIABLE-PUBLIC; verified: false
+    source: "NO DEFENSIBLE FREE SERIES EXISTS. Confirmed absent from PSA OpenSTAT
+             (which carries whole-nut Coconut Mature and Coconut Young only),
+             from the PCA Commodity Price Watch, and from DA Bantay Presyo (which
+             covers retail food commodities). Virgin coconut oil has no unique
+             HS-6 code internationally and falls under 1513.11 crude coconut oil;
+             the Philippines defines a national 11-digit line, PSCC
+             1513.11.10-009, but it is not disseminated as a labelled public
+             series, and PSA trade tables aggregate crude, refined and virgin oil
+             into a single Coconut Oil line."
     e11_weight: hi
-    note: "highest product weight; dominates value basis with concentrate"
+    note: "REMAINS UNVERIFIED, and this is a finding rather than an omission. The
+           three honest options are: a paid UCAP subscription or trade-data
+           vendor; a PSA Trade Statistics microdata request for PSCC
+           1513.11.10-009, which may still be returned only at the aggregate
+           1513.11 level; or a documented premium multiple over verified crude
+           coconut oil, stated as an assumption. Historic anchors exist but are
+           stale and unsuitable as a series: 4,348 USD/mt FOB Manila in 2015 and
+           2,522 USD/mt in 2017 per PCA figures cited in an ILO study. Until one
+           of the three routes is taken, every peso figure in the economics
+           remains indicative, which is how the manuscript reports it."
   w_crude:
-    value: 140.0; unit: PHP/kg; status: verify; verified: false
-    source: "PCA crude coconut oil (CNO) price series"
+    value: 140.0; unit: PHP/kg; status: verified-proxy; verified: true
+    source: "World Bank Commodity Price Data (Pink Sheet), coconut oil, crude,
+             CIF Rotterdam, monthly USD/mt. Annual averages: 1,075 (2023),
+             1,519 (2024), 2,480 (2025). The 2025 average converts to PHP 141.4
+             per kg at 57 PHP/USD. Philippine DOMESTIC millgate crude coconut oil
+             over 2025-2026 is reported in the same range, and the free
+             International Coconut Community Weekly Price Update re-publishes the
+             PCA and UCAP domestic millgate series."
     e11_weight: hi
-    note: "crude_bypass option value; ~0.70×w_vco assumption"
+    note: "VERIFIED BY PROXY, and the proxy needs its caveat stated. The World
+           Bank series is CIF Rotterdam, which carries freight and sits
+           structurally above Philippine domestic millgate, so its agreement with
+           the modelled 140.0 to within one percent is a coincidence of basis and
+           NOT a validation. What can be said is weaker and still useful: both
+           the international benchmark and the reported domestic millgate place
+           crude coconut oil near or slightly above 140 PHP/kg in the current
+           window, so the modelled value is not optimistic. The FX rate of 57
+           PHP/USD is itself an assumption. UPGRADE PATH: ICC Weekly Price Update
+           for domestic millgate on a consistent basis."
   w_meal:
     value: 22.0; unit: PHP/kg; status: verify; verified: false
     source: "copra meal / animal feed wholesale (PSA / feed millers)"
@@ -49,10 +90,26 @@ parameters:
     source: "raw coconut shell / biomass fuel price"
     e11_weight: lo
   w_copra_buy:
-    value: 40.0; unit: PHP/kg; status: verify; verified: false
-    source: "PCA copra farmgate price monitor"
+    value: 40.0; unit: PHP/kg; status: verified-secondary; verified: true
+    source: "PCA Commodity Price Watch, reported via named outlets with dates
+             (PCA is the primary compiler; these are secondary transcriptions,
+             see tier note). Farmgate national average: 52.10 (30 Jan 2025, PNA
+             citing PCA Eastern Visayas), 58.10 (31 Mar 2025, BusinessMirror
+             citing PCA-TIRD), 59.01 (3 Apr 2025, Inquirer), 49.82 (16 Jan 2026),
+             46.88 (22 May 2026), 44.52 (22 Jul 2026, Philstar citing PCA).
+             Millgate over the same window: 75.34 (Mar 2025) falling to 52.54
+             (Jul 2026). Standard reference grade is resecada, or the 12 percent
+             semi-resecada base set by PCA Administrative Order No. 01 (1991)."
     e11_weight: hi
-    note: "copra_buy is the dominant D1/D8 rescue value; also sets φ economics"
+    note: "VERIFIED AT SECONDARY TIER. Modelled 40.0 sits BELOW every observed
+           farmgate reading in the 2025-2026 window, which ranged 44.5 to 59.0.
+           The model is therefore conservative on the dominant rescue-option
+           value by 11 to 48 percent. Note the series is volatile: farmgate
+           roughly doubled year-on-year into early 2025 then fell back, so a
+           point value is inappropriate and a 44-59 band should be reported.
+           UPGRADE PATH: pca.gov.ph Trade and Market, Commodity Price Watch, for
+           primary regional tables; ICC Weekly Price Update monthly PDFs are a
+           free re-publication of the same PCA and UCAP figures."
   w_copra_sale:
     value: 38.0; unit: PHP/kg; status: est; verified: false
     source: "ASSUMPTION: w_copra_buy minus 2 PHP/kg handling spread"
