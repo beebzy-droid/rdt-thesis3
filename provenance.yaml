@@ -32,47 +32,49 @@ parameters:
 
   # ---------------- product prices (enter every ΔR via value-weighted P(τ)) ----
   w_vco:
-    value: 200.0; unit: PHP/kg; status: UNVERIFIABLE-PUBLIC; verified: false
-    source: "NO DEFENSIBLE FREE SERIES EXISTS. Confirmed absent from PSA OpenSTAT
-             (which carries whole-nut Coconut Mature and Coconut Young only),
-             from the PCA Commodity Price Watch, and from DA Bantay Presyo (which
-             covers retail food commodities). Virgin coconut oil has no unique
-             HS-6 code internationally and falls under 1513.11 crude coconut oil;
-             the Philippines defines a national 11-digit line, PSCC
-             1513.11.10-009, but it is not disseminated as a labelled public
-             series, and PSA trade tables aggregate crude, refined and virgin oil
-             into a single Coconut Oil line."
+    value: 200.0; unit: PHP/kg; status: verified-derived; verified: true
+    source: "DERIVED as implied export unit value from UCAP Weekly Bulletin
+             Vol. LXVII No. 5, 2 February 2023, reporting October 2022 Philippine
+             virgin coconut oil exports of USD 5.986 million on 1,715 MT. Unit
+             value 3,490 USD/MT, which is 204 PHP/kg at approximately 58.5
+             PHP/USD for the period and 214 PHP/kg at the 61.43 rate stated in
+             the PCA bulletin of 31 July 2026."
     e11_weight: hi
-    note: "REMAINS UNVERIFIED, and this is a finding rather than an omission. The
-           three honest options are: a paid UCAP subscription or trade-data
-           vendor; a PSA Trade Statistics microdata request for PSCC
-           1513.11.10-009, which may still be returned only at the aggregate
-           1513.11 level; or a documented premium multiple over verified crude
-           coconut oil, stated as an assumption. Historic anchors exist but are
-           stale and unsuitable as a series: 4,348 USD/mt FOB Manila in 2015 and
-           2,522 USD/mt in 2017 per PCA figures cited in an ILO study. Until one
-           of the three routes is taken, every peso figure in the economics
-           remains indicative, which is how the manuscript reports it."
+    note: "VERIFIED BY DERIVATION, after the earlier conclusion that no public VCO
+           price exists. That conclusion was right about PRICE SERIES and wrong
+           about derivability: no agency quotes a VCO price, but export value
+           divided by export volume yields an implied unit value, and VCO output
+           is overwhelmingly exported so FOB export is arguably the correct basis
+           for the plant's realised price rather than a substitute for it.
+           Modelled 200.0 sits within two percent of the derived 204. The figure
+           is a single month and predates the current window, so it should be
+           reported as an order-of-magnitude confirmation rather than a current
+           price. CITATION CONSTRAINT: the UCAP bulletin carries an explicit
+           reproduction restriction; cite the two figures with attribution and do
+           not reproduce its tables."
   w_crude:
-    value: 140.0; unit: PHP/kg; status: verified-proxy; verified: true
-    source: "World Bank Commodity Price Data (Pink Sheet), coconut oil, crude,
-             CIF Rotterdam, monthly USD/mt. Annual averages: 1,075 (2023),
-             1,519 (2024), 2,480 (2025). The 2025 average converts to PHP 141.4
-             per kg at 57 PHP/USD. Philippine DOMESTIC millgate crude coconut oil
-             over 2025-2026 is reported in the same range, and the free
-             International Coconut Community Weekly Price Update re-publishes the
-             PCA and UCAP domestic millgate series."
+    value: 140.0; unit: PHP/kg; status: verified-primary; verified: true
+    source: "PCA Daily Market Prices, 31 July 2026, section III-A Domestic
+             Millgate Price: CRUDE COCONUT OIL 100.8 to 125.44 PHP/kg, VAT
+             inclusive, sourced by PCA from UCAP. RBD CNO cooking oil 132.72 to
+             143.36 over the same day. The bulletin states the exchange rate it
+             uses, US$1 = 61.43 PHP, and quotes international coconut oil CIF
+             Europe at 1,990 USD/MT, consistent with the World Bank Pink Sheet
+             June 2026 figure of 1,979 USD/MT."
     e11_weight: hi
-    note: "VERIFIED BY PROXY, and the proxy needs its caveat stated. The World
-           Bank series is CIF Rotterdam, which carries freight and sits
-           structurally above Philippine domestic millgate, so its agreement with
-           the modelled 140.0 to within one percent is a coincidence of basis and
-           NOT a validation. What can be said is weaker and still useful: both
-           the international benchmark and the reported domestic millgate place
-           crude coconut oil near or slightly above 140 PHP/kg in the current
-           window, so the modelled value is not optimistic. The FX rate of 57
-           PHP/USD is itself an assumption. UPGRADE PATH: ICC Weekly Price Update
-           for domestic millgate on a consistent basis."
+    note: "VERIFIED AT PRIMARY TIER, AND THE MODELLED VALUE IS OPTIMISTIC. This is
+           the first parameter found to err in the unfavourable direction:
+           modelled 140.0 sits 12 to 39 percent ABOVE the observed domestic
+           millgate range of 100.8 to 125.44. It corresponds instead to REFINED
+           RBD oil at 132.72 to 143.36, which is a different product from the
+           crude stream the bypass option sells.
+           THIS ALSO OVERTURNS THE EARLIER PROXY. The World Bank CIF Rotterdam
+           series converted to about 141 PHP/kg and appeared to agree with the
+           modelled value to within one percent. The ledger recorded at the time
+           that this agreement was a coincidence of basis and not a validation,
+           because Rotterdam carries freight. The primary domestic figure now
+           shows the basis gap is 15 to 40 percent, so the caution was warranted
+           and the apparent agreement was spurious."
   w_meal:
     value: 22.0; unit: PHP/kg; status: verify; verified: false
     source: "copra meal / animal feed wholesale (PSA / feed millers)"
@@ -90,26 +92,19 @@ parameters:
     source: "raw coconut shell / biomass fuel price"
     e11_weight: lo
   w_copra_buy:
-    value: 40.0; unit: PHP/kg; status: verified-secondary; verified: true
-    source: "PCA Commodity Price Watch, reported via named outlets with dates
-             (PCA is the primary compiler; these are secondary transcriptions,
-             see tier note). Farmgate national average: 52.10 (30 Jan 2025, PNA
-             citing PCA Eastern Visayas), 58.10 (31 Mar 2025, BusinessMirror
-             citing PCA-TIRD), 59.01 (3 Apr 2025, Inquirer), 49.82 (16 Jan 2026),
-             46.88 (22 May 2026), 44.52 (22 Jul 2026, Philstar citing PCA).
-             Millgate over the same window: 75.34 (Mar 2025) falling to 52.54
-             (Jul 2026). Standard reference grade is resecada, or the 12 percent
-             semi-resecada base set by PCA Administrative Order No. 01 (1991)."
+    value: 40.0; unit: PHP/kg; status: verified-primary; verified: true
+    source: "PCA Trade and Market Development Department, Daily Market Prices,
+             31 July 2026 (primary bulletin). Domestic copra, Region XI (Davao):
+             FARMGATE 47.94 PHP/kg, MILLGATE 62.58 PHP/kg. National averages the
+             same day: farmgate 41.40, millgate 53.09. Year-earlier Region XI
+             millgate 74.46, so the series has fallen sharply over twelve months."
     e11_weight: hi
-    note: "VERIFIED AT SECONDARY TIER. Modelled 40.0 sits BELOW every observed
-           farmgate reading in the 2025-2026 window, which ranged 44.5 to 59.0.
-           The model is therefore conservative on the dominant rescue-option
-           value by 11 to 48 percent. Note the series is volatile: farmgate
-           roughly doubled year-on-year into early 2025 then fell back, so a
-           point value is inappropriate and a 44-59 band should be reported.
-           UPGRADE PATH: pca.gov.ph Trade and Market, Commodity Price Watch, for
-           primary regional tables; ICC Weekly Price Update monthly PDFs are a
-           free re-publication of the same PCA and UCAP figures."
+    note: "VERIFIED AT PRIMARY TIER, superseding the earlier secondary reading.
+           Modelled 40.0 is 17 percent BELOW the Region XI farmgate of 47.94 and
+           close to the national average of 41.40. Conservative for a Davao
+           siting. The twelve-month swing is large (Region XI millgate 74.46 to
+           62.58) so a band rather than a point value is the correct reporting
+           form."
   w_copra_sale:
     value: 38.0; unit: PHP/kg; status: est; verified: false
     source: "ASSUMPTION: w_copra_buy minus 2 PHP/kg handling spread"

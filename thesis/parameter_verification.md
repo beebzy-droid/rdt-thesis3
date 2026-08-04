@@ -94,3 +94,60 @@ Every peso figure scales linearly with V0, which depends on three prices that
 remain unverified. The **ratios between rows do not depend on V0** and are the
 defensible content of the table; the absolute levels remain indicative until the
 PCA price series is obtained.
+
+## Prices, closed at primary tier
+
+Source documents: PCA Trade and Market Development Department, *Daily Market
+Prices*, 31 July 2026; World Bank Commodity Price Data monthly series updated
+2 July 2026; UCAP Weekly Bulletin Vol. LXVII No. 5, 2 February 2023.
+
+| Parameter | Modelled | Observed | Direction |
+|---|---|---|---|
+| `w_copra_buy` | 40.0 | 47.94 Region XI farmgate (41.40 national) | conservative by 17% |
+| `w_crude` | 140.0 | **100.8 to 125.44** domestic millgate | **optimistic by 12 to 39%** |
+| `w_vco` | 200.0 | 204 derived implied export unit value | within 2% |
+
+### The crude oil finding, and why it matters twice
+
+This is the first parameter found to err in the unfavourable direction. The
+modelled 140 PHP/kg corresponds not to crude coconut oil, quoted at 100.8 to
+125.44, but to **refined RBD oil** at 132.72 to 143.36, which is a different
+product from the crude stream the bypass option actually sells.
+
+It matters a second time as a check on method. The earlier proxy took the World
+Bank CIF Rotterdam series, converted it to roughly 141 PHP/kg, and observed that
+it agreed with the modelled value to within one percent. The ledger recorded at
+the time that this was a coincidence of basis rather than a validation, because
+Rotterdam carries freight above domestic millgate. The primary figure now shows
+the basis gap is 15 to 40 percent. **The apparent agreement was spurious, and the
+caveat that prevented it from being reported as confirmation was doing real
+work.** A proxy that agrees with a prior is the most dangerous kind, because
+nothing prompts a second look.
+
+### VCO: the earlier conclusion was half right
+
+The previous entry recorded that no public VCO price exists. That was correct
+about price series and wrong about derivability. No agency quotes a VCO price, but
+UCAP reports export value and volume, and their ratio is an implied unit value of
+3,490 USD/MT for October 2022, which is 204 PHP/kg at the period exchange rate
+against a modelled 200. Since VCO output is overwhelmingly exported, FOB export
+value is arguably the correct basis for the plant's realised price rather than a
+substitute for it. The figure is one month and predates the current window, so it
+confirms the order of magnitude rather than establishing a current price.
+
+### Net economic effect is not a simple direction
+
+Two parameters now push the economics up, utility-outage frequency and market
+availability, and one pushes down, crude oil value. The product mix determines the
+net, so the E11 recomputation should be rerun with all four before any revised
+figure is quoted. Until then the previously reported range stands, with the
+crude-oil correction noted as an offsetting term.
+
+### Citation constraint
+
+The UCAP Weekly Bulletin carries an explicit prohibition on reproducing its
+articles or statistics without written consent. The two figures used here are
+cited with attribution, which is ordinary academic practice for factual data, and
+no UCAP table is reproduced. The PCA bulletin is a public government document and
+itself credits UCAP as the source of its oil prices, so citing PCA is the cleaner
+path where both carry the same figure.
