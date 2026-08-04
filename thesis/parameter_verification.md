@@ -151,3 +151,56 @@ cited with attribution, which is ordinary academic practice for factual data, an
 no UCAP table is reproduced. The PCA bulletin is a public government document and
 itself credits UCAP as the source of its oil prices, so citing PCA is the cleaner
 path where both carry the same figure.
+
+## Propagating the price corrections: what can and cannot be computed
+
+Before recomputing anything, a structural check on where each corrected price
+enters the value function. The model computes
+
+    V = w_vco*F_vco + w_meal*(F_meal + cake) + w_char*F_char + w_conc*F_conc
+        + w_crude*F_crude_sale + w_shell*F_shell - w_copra_buy*F_buy
+
+**Two of the three corrections cannot move the baseline at all.** `w_crude`
+multiplies `F_crude_sale` and `w_copra_buy` multiplies `F_buy`, and both flows are
+identically zero in nominal operation because the crude bypass and the purchase
+option are disruption responses, not standing routes. Substituting the corrected
+values changes nominal V0 by 0.0000 percent, confirmed numerically.
+
+This bounds the exercise precisely. **The crude-oil correction, which is the one
+that runs against the result, affects the value of the crude-bypass option during
+a disruption, and therefore acts on ΔR rather than on V0.** It cannot be
+propagated by scaling the reported economics; it requires rerunning the campaign
+with the corrected price. A 12 to 39 percent reduction in the value of one option
+in one branch of the option set will reduce ΔR by less than that, and the size is
+not estimable from what is in hand. Until the rerun, the correction is recorded
+and its direction stated, and no revised ΔR is quoted.
+
+### A check that could have gone badly
+
+Evaluating V at the campaign's initial state returned PHP 147,403 per hour against
+the frozen constant of 470,000, a factor of three apart, which would have been a
+serious result had it been real. Integrating to steady state before evaluating
+gives 469,941 per hour, converging within 96 hours and matching the frozen
+constant to within 0.02 percent. The initial-state reading was simply the dryer
+chain still filled with wet material and not yet discharging at rate. The lesson is
+narrow and worth recording: a value function evaluated at an arbitrary state is not
+a baseline, and a discrepancy found that way should be integrated out before it is
+reported.
+
+### Updated annual benefit
+
+With the verified `w_vco` raising V0 by 0.88 percent to PHP 474,076 per hour:
+
+| Utility-outage frequency (siting) | phi = 0.30 (stress) | phi unconstrained |
+|---|---|---|
+| as-modelled, 6.0/yr | 72.5 M | 101.6 M |
+| urban, DLPC post-2017, 9.24/yr | 92.6 M | **129.8 M** |
+| urban, unplanned-only, 13.96/yr | 121.9 M | 170.9 M |
+| cooperative, DORECO, 41.2/yr | 291.1 M | 408.2 M |
+| cooperative, DANECO, 50.2/yr | 347.1 M | 486.6 M |
+
+The recommended headline remains the urban unconstrained case at PHP 130 million
+per year, on the reasoning given earlier that it is the most conservative verified
+option and that the larger figures rest ever more heavily on a single parameter.
+This figure is pending the crude-price rerun, which will move it down by an amount
+not yet determined.
