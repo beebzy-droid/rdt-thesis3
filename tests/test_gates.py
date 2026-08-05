@@ -284,3 +284,35 @@ def test_campaign_output_dir_encodes_physics_parameters():
     assert "cat, lo, hi, buy_cap, w_crude = args" in src
     assert 'f"data/campaign{tag}"' in src
     assert "crude{w_crude:g}" in src
+
+
+def test_campaign_params_never_none_valued():
+    """Every parameter override in campaign.run_shard must be guarded, so that
+    an unset CLI flag never writes None into PlantParams. Regression: a partial
+    string edit on 2026-07-13 orphaned the p_fast buy_cap line into the w_crude
+    block, so --w-crude without --buy-cap set buy_cap_frac=None and the compiler
+    crashed on None * float inside a spawned worker."""
+    import dataclasses, re, pathlib
+    from rdt_core.plant_dae import PlantParams
+    from rdt_core.loop import strong_params
+    src = pathlib.Path("scripts/campaign.py").read_text()
+    body = src.split("def run_shard")[1].split("\ndef ")[0]
+    # each replace(...) must sit under a guard naming the same variable
+    for m in re.finditer(r"replace\([^)]*?(\w+)=(\w+)\)", body):
+        field, var = m.group(1), m.group(2)
+        if var in ("buy_cap", "w_crude"):
+            guard = f"if {var}" 
+            before = body[:m.start()]
+            assert guard in before, f"{field}={var} not guarded by '{guard}'"
+    # and the guarded construction must produce usable params either way
+    for bc, wc in [(None, None), (None, 113.0), (0.3, None), (0.3, 113.0)]:
+        p = PlantParams(); pf = strong_params()
+        if bc:
+            p = dataclasses.replace(p, buy_cap_frac=bc)
+            pf = dataclasses.replace(pf, buy_cap_frac=bc)
+        if wc is not None:
+            p = dataclasses.replace(p, w_crude=wc)
+            pf = dataclasses.replace(pf, w_crude=wc)
+        for q in (p, pf):
+            assert isinstance(q.buy_cap_frac, float)
+            assert isinstance(q.w_crude, float)

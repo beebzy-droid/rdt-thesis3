@@ -67,13 +67,13 @@ def run_shard(args):
     import dataclasses
     if buy_cap:
         p_slow = dataclasses.replace(p_slow, buy_cap_frac=buy_cap)
+        p_fast = dataclasses.replace(p_fast, buy_cap_frac=buy_cap)
     if w_crude is not None:
         # applies to BOTH arms: a price is a property of the market, not of the
         # treatment, so granting it to one arm only would break comparator
         # symmetry (protocol 1 of the methodology paper)
         p_slow = dataclasses.replace(p_slow, w_crude=w_crude)
         p_fast = dataclasses.replace(p_fast, w_crude=w_crude)
-        p_fast = dataclasses.replace(p_fast, buy_cap_frac=buy_cap)
     F0 = p_slow.nominal_nut_feed()
     arms = {"slow": sp.build_arm(p_slow), "fast": sp.build_arm(p_fast)}
     cache_fast, cache_slow = TopologyCache(p_fast), TopologyCache(p_slow)
