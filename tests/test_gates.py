@@ -266,3 +266,21 @@ def test_interrater_handles_NA_code():
     d = pd.read_csv(f, keep_default_na=False)
     assert (d["P6"] == "NA").any(), "NA codes lost in parsing"
     assert not d["P6"].isna().any()
+
+
+def test_campaign_output_dir_encodes_physics_parameters():
+    """A campaign run at a different price must write to a different directory.
+    The skip-exists guard is keyed on the path, so a colliding path silently
+    reuses old shards and reports the old result. This happened on 2026-07-13:
+    a crude-price rerun skipped all 40 shards and re-reported the original
+    numbers. Guards the fix."""
+    import importlib.util, pathlib
+    spec = importlib.util.spec_from_file_location(
+        "camp", pathlib.Path("scripts/campaign.py"))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    src = pathlib.Path("scripts/campaign.py").read_text()
+    # the job tuple must carry the price, and the path must vary with it
+    assert "cat, lo, hi, buy_cap, w_crude = args" in src
+    assert 'f"data/campaign{tag}"' in src
+    assert "crude{w_crude:g}" in src

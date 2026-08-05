@@ -25,6 +25,7 @@ Usage: python scripts/analysis_prereg.py
 import sys, pathlib, glob
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from rdt_core import _console  # noqa: F401  (force UTF-8 stdout)
+import argparse
 import numpy as np
 import pandas as pd
 from scipy.stats import wilcoxon
@@ -45,8 +46,18 @@ def ci(x, stat=np.mean):
     return stat(x), np.percentile(bs, 2.5), np.percentile(bs, 97.5)
 
 
+def _campaign_dir():
+    """Alternate campaign directory, so a rerun at corrected
+    parameters is analysed from its OWN shards rather than the
+    default ones."""
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("--dir", default="data/campaign")
+    known, _ = ap.parse_known_args()
+    return known.dir
+
+
 def main():
-    files = sorted(glob.glob("data/campaign/*.parquet"))
+    files = sorted(glob.glob(f"{_campaign_dir()}/*.parquet"))
     if not files:
         print("no campaign shards found — run scripts/campaign.py first"); return
     df = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)

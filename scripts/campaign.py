@@ -30,9 +30,18 @@ def run_shard(args):
     reach them. Everything a worker needs travels in the job tuple; the output
     directory is derived HERE. Bug caught in production: --buy-cap workers wrote/
     checked the UNCAPPED directory (data protected only by the skip guard)."""
-    cat, lo, hi, buy_cap = args
-    out_dir = (pathlib.Path(f"data/campaign_cap{buy_cap}") if buy_cap
-               else pathlib.Path("data/campaign"))
+    cat, lo, hi, buy_cap, w_crude = args
+    # Output directory encodes EVERY parameter that changes the physics, because
+    # the skip-exists guard below is keyed on the path. A run at a different
+    # price writing to the same directory would silently reuse the old shards and
+    # report the old result, which is exactly what happened on 2026-07-13 when a
+    # crude-price rerun was attempted without this suffix.
+    tag = ""
+    if buy_cap:
+        tag += f"_cap{buy_cap}"
+    if w_crude is not None:
+        tag += f"_crude{w_crude:g}"
+    out_dir = pathlib.Path(f"data/campaign{tag}")
     out = out_dir / f"{cat}_{lo:04d}_{hi:04d}.parquet"
     out_dir.mkdir(parents=True, exist_ok=True)
     if out.exists():
@@ -55,9 +64,15 @@ def run_shard(args):
     db = importlib.util.module_from_spec(spec3); spec3.loader.exec_module(db)
 
     p_slow, p_fast = PlantParams(), strong_params()
+    import dataclasses
     if buy_cap:
-        import dataclasses
         p_slow = dataclasses.replace(p_slow, buy_cap_frac=buy_cap)
+    if w_crude is not None:
+        # applies to BOTH arms: a price is a property of the market, not of the
+        # treatment, so granting it to one arm only would break comparator
+        # symmetry (protocol 1 of the methodology paper)
+        p_slow = dataclasses.replace(p_slow, w_crude=w_crude)
+        p_fast = dataclasses.replace(p_fast, w_crude=w_crude)
         p_fast = dataclasses.replace(p_fast, buy_cap_frac=buy_cap)
     F0 = p_slow.nominal_nut_feed()
     arms = {"slow": sp.build_arm(p_slow), "fast": sp.build_arm(p_fast)}
@@ -99,9 +114,16 @@ def main():
     ap.add_argument("--buy-cap", type=float, default=None,
                     help="market-availability cap on purchased copra, fraction of "
                          "nominal (e.g. 0.3). Output -> data/campaign_cap{v}/")
+    ap.add_argument("--w-crude", type=float, default=None,
+                    help="crude coconut oil price, PHP/kg. PCA 31-Jul-2026 gives "
+                         "domestic millgate 100.8-125.44 against a modelled 140. "
+                         "Output -> data/campaign_crude{v}/ so shards never "
+                         "collide with a run at a different price.")
     a = ap.parse_args()
-    jobs = [(c, lo, min(lo + SHARD, a.n), a.buy_cap)
+    jobs = [(c, lo, min(lo + SHARD, a.n), a.buy_cap, a.w_crude)
             for c in a.cats.split(",") for lo in range(0, a.n, SHARD)]
+    if a.w_crude is not None:
+        print(f"w_crude = {a.w_crude:g} PHP/kg -> data/campaign_crude{a.w_crude:g}/")
     print(f"{len(jobs)} shards x <= {SHARD} scenarios, {a.workers} workers")
     if a.workers == 1:
         for j in jobs:
