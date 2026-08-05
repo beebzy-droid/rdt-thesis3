@@ -204,3 +204,55 @@ per year, on the reasoning given earlier that it is the most conservative verifi
 option and that the larger figures rest ever more heavily on a single parameter.
 This figure is pending the crude-price rerun, which will move it down by an amount
 not yet determined.
+
+## The crude-price correction, measured
+
+The correction was expected to reduce the headline. Measured on paired runs at four
+prices over identical disruption paths (D3 and D4, the categories where the bypass
+is relevant), it does not, and the reason is instructive.
+
+| `w_crude` | basis | ΔR if always activated | ΔR with selection | harm rate |
+|---|---|---|---|---|
+| 140.00 | modelled | −0.02539 | **0.00031** | 60.7% |
+| 125.44 | PCA upper | −0.03440 | 0.00001 | 60.7% |
+| 113.12 | PCA midpoint | −0.04202 | 0.00000 | 64.3% |
+| 100.80 | PCA lower | −0.04964 | 0.00000 | 64.3% |
+
+**The crude-bypass option was never contributing to the headline.** Even at the
+modelled price, and even granting perfect knowledge of when to use it, its
+contribution to ΔR is 0.00031, which is one eighth of one percent of the reported
+0.244. Activated unconditionally it is net harmful at every price tested, on 61 to
+64 percent of scenarios. The correction reduces an option's value by 95 percent and
+moves the headline by an amount too small to report.
+
+This is the layered architecture doing what Section 4 of the manuscript claims for
+it. A screening and selection layer that can decline an option converts a
+parameter error in that option's value from a threat to the result into a change
+in how often the option is chosen. The exposure was bounded before the price was
+ever checked.
+
+### The caveat that runs the other way
+
+Protection of the headline is not protection of everything. The selective column
+assumes the system knows when the option helps; the real screen predicts it
+imperfectly. When it is wrong, the corrected price makes each wrong activation
+roughly twice as costly, from −0.0254 to −0.0496. **The expected effect is
+therefore a slightly worse harm tail rather than a lower headline**, and the
+harm-rate endpoint should be re-examined at the corrected price rather than
+assumed unchanged.
+
+### Status and what remains
+
+This is 28 paired scenarios per price across two categories, sufficient to
+establish that the effect on the headline is negligible and not sufficient to
+quantify the harm-tail change. The full campaign at the corrected price is the
+remaining step:
+
+```
+python scripts/campaign.py --cats D1,D3,D4,D8 --n 500 --workers 12   # w_crude=113
+python scripts/analysis_prereg.py
+```
+
+Until it runs, the reported ΔR stands unchanged, which is now a defensible position
+rather than a pending one: the correction has been measured on the option it
+affects and shown to be immaterial to the headline.
