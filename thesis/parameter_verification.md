@@ -256,3 +256,48 @@ python scripts/analysis_prereg.py
 Until it runs, the reported ΔR stands unchanged, which is now a defensible position
 rather than a pending one: the correction has been measured on the option it
 affects and shown to be immaterial to the headline.
+
+## Full campaign at the corrected crude price: the result is robust
+
+2,000 paired scenarios rerun at `w_crude` = 113 PHP/kg, the midpoint of the PCA
+domestic millgate range, against the original 140.
+
+| Endpoint | 140 (modelled) | 113 (corrected) | change |
+|---|---|---|---|
+| pooled ΔR | 0.2438 [0.2368, 0.2511] | **0.2428** [0.2356, 0.2500] | −0.0010 |
+| pooled harm rate | 3.9% | **3.9%** | none |
+| D1 / D3 / D4 / D8 ΔR | 0.306 / 0.140 / 0.255 / 0.275 | 0.307 / 0.131 / 0.259 / 0.275 | |
+| D3 harm | 14.2% | 15.2% | +1.0 pp |
+| D4 harm | 1.2% | 0.4% | −0.8 pp |
+| annualized benefit | ₱100.7 M/yr | ₱100.3 M/yr | −0.4% |
+
+**A 19 percent error in a headline price moves the headline result by 0.4 percent.**
+The confidence intervals overlap across almost their entire length, and the
+corrected interval still clears the pre-registered 0.15 target on its lower bound.
+
+### The prediction, and where it was incomplete
+
+The option-level measurement predicted two things. That the headline effect would
+be negligible: confirmed, and the predicted magnitude was right to an order of
+magnitude, 0.0003 estimated against 0.0010 observed. And that the harm tail would
+worsen because wrong activations become costlier: **partially wrong, and the way
+it is wrong is the more interesting result.**
+
+Pooled harm did not move. Its composition did. D3 harm rose by one point while D4
+harm fell by nearly one point, and the two nearly cancel. The mechanism is
+visible in the ΔR column: at the lower price the selection layer stops choosing
+the bypass in D4, where it had been marginally over-selected, so D4 both gains ΔR
+(0.255 to 0.259) and sheds harm (1.2 to 0.4 percent). D3 is where the option is
+genuinely needed for tank relief, so the reduced value there translates into
+slightly more episodes ending worse.
+
+The system did not merely absorb the price change; it reallocated around it. That
+is a stronger statement than robustness, and it was not predicted.
+
+### Status: propagation closed
+
+The crude-price correction is now measured at full campaign scale rather than
+bounded. Every E11-critical parameter except `tau_dry` is verified and propagated.
+The reported ΔR of 0.244 stands, with 0.243 at the corrected price available if a
+reviewer prefers the verified figure; the difference is immaterial to every claim
+in either manuscript.
