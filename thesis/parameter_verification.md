@@ -301,3 +301,51 @@ bounded. Every E11-critical parameter except `tau_dry` is verified and propagate
 The reported ΔR of 0.244 stands, with 0.243 at the corrected price available if a
 reviewer prefers the verified figure; the difference is immaterial to every claim
 in either manuscript.
+
+## tau_dry: resolved by insensitivity rather than by pinning
+
+The dryer residence time is the last E11-critical parameter without a single
+verified value. The modelled 30 h sits between the authoritative Philippine
+mechanical figure of about 24 h (PCA Zamboanga Research Center via DOST-PCAARRD)
+and roughly 36 h for small-holder indirect dryers, and no source establishes a
+point value for the plant archetype modelled here.
+
+Rather than argue the value, we measured whether it matters. Running the null arm
+and every option on identical disruption paths at each residence time, and taking
+the per-scenario best option, gives the one-shot oracle gain, which upper-bounds
+what any selection policy could achieve:
+
+| `tau_dry` | R null | R oracle | ΔR |
+|---|---|---|---|
+| 24 h | 0.7251 | 0.8537 | 0.1286 |
+| 30 h | 0.7252 | 0.8547 | 0.1294 |
+| 36 h | 0.7252 | 0.8554 | 0.1302 |
+
+**Across the full documented envelope the gain moves by 0.0016, which is 1.2
+percent of its own value and 0.65 percent of the reported headline of 0.244.**
+The baseline is essentially fixed (0.7251 to 0.7252); a longer residence raises the
+oracle gain very slightly, which is the expected direction, since more holdup means
+more inertia for an option to work against.
+
+This resolves the parameter without pinning it. `tau_dry` should be reported as a
+documented range of 24 to 36 hours with its sensitivity stated, and no claim in
+either manuscript depends on narrowing it. Reporting a range with a measured
+sensitivity is a stronger position than asserting a point value the sources do not
+support.
+
+**Scope of the check.** 22 scenarios in one disruption category, using the oracle
+bound rather than the closed loop. It establishes that the sensitivity is small
+relative to the headline, not that it is exactly 0.0016. A full campaign is
+available if a reviewer asks:
+
+```
+python scripts/campaign.py --cats D1,D3,D4,D8 --n 500 --workers 12 --tau-dry 24
+python scripts/analysis_prereg.py --dir data/campaign_tau24
+```
+
+### Ledger status
+
+Every E11-critical parameter is now either verified against a source and
+propagated, or shown to be immaterial to the result. The provenance gate remains
+red overall, because twenty-eight non-critical parameters are still unverified,
+and that is the correct state: the gate tracks completeness, not adequacy.

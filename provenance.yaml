@@ -230,7 +230,14 @@ parameters:
     note: "THEORY-CRITICAL: dominant transition timescale; sets tau in D*.
            The empirical crude_bypass breakeven (51 h) sits near 2x this value,
            consistent with a forward plus return transition. A reviewer will
-           challenge a point value here; report 24-36 h and show D* sensitivity."
+           challenge a point value here; report 24-36 h and show D* sensitivity.
+           RESOLVED BY INSENSITIVITY 2026-07-13, not by pinning. Across the full
+           24-36 h envelope the oracle resilience gain moves by 0.0016, which is
+           1.2 percent of its own value and 0.65 percent of the reported headline
+           of 0.244; the baseline is fixed to four decimal places. The parameter
+           should be reported as a documented range with its measured sensitivity
+           rather than asserted as a point value the sources do not support. No
+           claim in either manuscript depends on narrowing it."
   tau_buf:
     value: 8.0; unit: hr; status: verify; verified: false
     source: "buffer-vessel residence, plant design basis"

@@ -30,7 +30,7 @@ def run_shard(args):
     reach them. Everything a worker needs travels in the job tuple; the output
     directory is derived HERE. Bug caught in production: --buy-cap workers wrote/
     checked the UNCAPPED directory (data protected only by the skip guard)."""
-    cat, lo, hi, buy_cap, w_crude = args
+    cat, lo, hi, buy_cap, w_crude, tau_dry = args
     # Output directory encodes EVERY parameter that changes the physics, because
     # the skip-exists guard below is keyed on the path. A run at a different
     # price writing to the same directory would silently reuse the old shards and
@@ -41,6 +41,8 @@ def run_shard(args):
         tag += f"_cap{buy_cap}"
     if w_crude is not None:
         tag += f"_crude{w_crude:g}"
+    if tau_dry is not None:
+        tag += f"_tau{tau_dry:g}"
     out_dir = pathlib.Path(f"data/campaign{tag}")
     out = out_dir / f"{cat}_{lo:04d}_{hi:04d}.parquet"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -74,6 +76,11 @@ def run_shard(args):
         # symmetry (protocol 1 of the methodology paper)
         p_slow = dataclasses.replace(p_slow, w_crude=w_crude)
         p_fast = dataclasses.replace(p_fast, w_crude=w_crude)
+    if tau_dry is not None:
+        # BOTH arms, for the same reason: dryer residence is plant physics, not a
+        # property of the treatment
+        p_slow = dataclasses.replace(p_slow, tau_dry=tau_dry)
+        p_fast = dataclasses.replace(p_fast, tau_dry=tau_dry)
     F0 = p_slow.nominal_nut_feed()
     arms = {"slow": sp.build_arm(p_slow), "fast": sp.build_arm(p_fast)}
     cache_fast, cache_slow = TopologyCache(p_fast), TopologyCache(p_slow)
@@ -119,11 +126,17 @@ def main():
                          "domestic millgate 100.8-125.44 against a modelled 140. "
                          "Output -> data/campaign_crude{v}/ so shards never "
                          "collide with a run at a different price.")
+    ap.add_argument("--tau-dry", type=float, default=None,
+                    help="dryer residence time, hours. Documented envelope is "
+                         "24 (PCA-ZRC mechanical) to 36 (small-holder indirect) "
+                         "against a modelled 30. Output -> data/campaign_tau{v}/")
     a = ap.parse_args()
-    jobs = [(c, lo, min(lo + SHARD, a.n), a.buy_cap, a.w_crude)
+    jobs = [(c, lo, min(lo + SHARD, a.n), a.buy_cap, a.w_crude, a.tau_dry)
             for c in a.cats.split(",") for lo in range(0, a.n, SHARD)]
     if a.w_crude is not None:
         print(f"w_crude = {a.w_crude:g} PHP/kg -> data/campaign_crude{a.w_crude:g}/")
+    if a.tau_dry is not None:
+        print(f"tau_dry = {a.tau_dry:g} h -> data/campaign_tau{a.tau_dry:g}/")
     print(f"{len(jobs)} shards x <= {SHARD} scenarios, {a.workers} workers")
     if a.workers == 1:
         for j in jobs:

@@ -269,21 +269,29 @@ def test_interrater_handles_NA_code():
 
 
 def test_campaign_output_dir_encodes_physics_parameters():
-    """A campaign run at a different price must write to a different directory.
-    The skip-exists guard is keyed on the path, so a colliding path silently
-    reuses old shards and reports the old result. This happened on 2026-07-13:
-    a crude-price rerun skipped all 40 shards and re-reported the original
-    numbers. Guards the fix."""
-    import importlib.util, pathlib
-    spec = importlib.util.spec_from_file_location(
-        "camp", pathlib.Path("scripts/campaign.py"))
-    m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
+    """Every optional physics parameter carried in the job tuple must also appear
+    in the output-path tag. The skip-exists guard is keyed on the path, so a
+    parameter that changes the physics without changing the path silently reuses
+    old shards and reports the old result. This happened on 2026-07-13: a
+    crude-price rerun skipped all 40 shards and re-reported the original numbers.
+
+    Written as an invariant rather than a literal signature match, because the
+    first version of this test asserted the exact unpack line and broke the moment
+    a further parameter was added, which is the wrong failure: the test should
+    fail when the INVARIANT breaks, not when the code grows.
+    """
+    import pathlib, re
     src = pathlib.Path("scripts/campaign.py").read_text()
-    # the job tuple must carry the price, and the path must vary with it
-    assert "cat, lo, hi, buy_cap, w_crude = args" in src
+    m = re.search(r"^\s*cat, lo, hi, (.+?) = args", src, re.M)
+    assert m, "job-tuple unpack not found in run_shard"
+    optional = [v.strip() for v in m.group(1).split(",")]
+    assert optional, "no optional parameters found"
+    tag_block = src.split("tag = \"\"")[1].split("out_dir")[0]
+    for var in optional:
+        assert var in tag_block, (
+            f"job-tuple parameter '{var}' does not affect the output path; a run "
+            f"varying it would collide with existing shards and silently reuse them")
     assert 'f"data/campaign{tag}"' in src
-    assert "crude{w_crude:g}" in src
 
 
 def test_campaign_params_never_none_valued():
